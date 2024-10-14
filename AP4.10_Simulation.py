@@ -40,8 +40,8 @@ import math
 
 savefilename_period = 'Sim_output_period.csv'       # name of save file, location defined by "scenario"
 savefilename_all = 'Sim_output_all.csv'             # name of save file, location defined by "scenario"
-#scenario = '01_hist_data//hist_'
-scenario = '02_synth_data//synth_'
+scenario = '01_hist_data//hist_'
+#scenario = '02_synth_data//synth_'
 
 # ...Activation of simulation functions
 smartbalancing = True      # True: Smart Balancing is globally switched on
