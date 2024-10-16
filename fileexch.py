@@ -68,21 +68,21 @@ def fill_power_load(scenario, balancing_groups, sim_duration):
     # ------getting the power values------- #
     kw_gen_file = scenario + 'Generation.csv'
     csv_file1 = open(kw_gen_file, mode='r')
-    file1 = csv.DictReader(csv_file1, delimiter=';')
+    file1 = csv.DictReader(csv_file1, delimiter=';') #reader object
     i = 0
     count = 0
 
     # search through the BG array
     for i in range(len(balancing_groups)):
         # search through the power plant array
-        for j in range(len(balancing_groups[i].array_generators)):
+        for j in range(len(balancing_groups[i].array_generators)): #search through generators of the BG, number can be found in file
             for row1 in file1:
                 if count == sim_duration:
                     count = 0
                     break
                 else:
                     count += 1
-                    balancing_groups[i].array_generators[j].array_gen_P.append(float(row1[balancing_groups[i].array_generators[j].name]))
+                    balancing_groups[i].array_generators[j].array_gen_P.append(float(row1[balancing_groups[i].array_generators[j].name]))  
 
                 # reset File pointer and skip Header row
             csv_file1.seek(0)
