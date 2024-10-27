@@ -815,10 +815,10 @@ class ControlArea(CalculatingGridElement):
     def imba_calc(self):
         for i in self.array_balancinggroups:
             i.imba_calc()
-        self.imba_P_ph = self.gen_P - self.load_P + self.aFRR_P + self.mFRR_P + self.sb_P
-        self.imba_P_sc = self.gen_P - self.gen_P_schedule - self.load_P + self.load_P_schedule + self.sb_P
+        self.imba_P_ph = self.gen_P - self.load_P + self.aFRR_P + self.mFRR_P + self.sb_P #imba_P_ph: imbalance in physical power
+        self.imba_P_sc = self.gen_P - self.gen_P_schedule - self.load_P + self.load_P_schedule + self.sb_P #imba_P_sc: imbalance in scheduled power
         self.FRCE = - self.imba_P_sc
-        self.FRCE_ol = - self.imba_P_sc - self.mFRR_P
+        self.FRCE_ol = - self.imba_P_sc - self.mFRR_P #FRCE_ol: open loop FRCE signal
         if self.FRCE_ol > 0:
             self.FRCE_ol_pos = self.FRCE_ol
             self.FRCE_ol_neg = 0.0
@@ -870,7 +870,7 @@ class ControlArea(CalculatingGridElement):
 
         self.FRCE_cl_pos = self.FRCE_ol_pos - self.aFRR_P_pos
         self.FRCE_cl_neg = self.FRCE_ol_neg - self.aFRR_P_neg
-
+        #PI-Regler für aFRR
         self.aFRR_ref_pos = (self.aFRR_ref_pos + (1 / t_step)
                          * (self.aFRR_beta + t_step / 2
                          * (1 / self.aFRR_T * t_step))

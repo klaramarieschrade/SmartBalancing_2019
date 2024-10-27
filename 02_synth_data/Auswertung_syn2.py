@@ -15,12 +15,12 @@ pd.set_option('display.max_columns', 15)
 # define location and name of files to set path
 # ===============================================================================
 
-location = "results/"
+location = "02_synth_data/results/"
 #location = "results_sin/"
 #location = "results_5d/"
 #location = "results_1d/"
 
-if location == "results/":
+if location == "02_synth_data/results/":
         scenario_files = ['6 no SB PAB','7 DEs', '8 NLs','9 no SB BEPP15','10 BEPP15','11 no SB BEPP1','12 BEPP1']
         scenario_path = ['6 no SB PAB','7 DEs', '8 NLs','9 no SB BEPP15','10 BEPP15','11 no SB BEPP1','12 BEPP1']
 
@@ -40,7 +40,7 @@ if location == "results/x":
         start = ["2019-06-12 10:00"]
         end = ["2019-06-12 14:45"]
 
-if location == "XXresults_1d/" or location == "results/":
+if location == "XXresults_1d/" or location == "02_synth_data/results/":
         start = ["2019-01-01 14:25"]
         end = ["2019-01-01 14:45"]
 # ===============================================================================

@@ -20,6 +20,8 @@ import matplotlib.pyplot as plt
 import time
 import os
 import sys
+import pandas as pd
+from datetime import datetime
 
 # ...Import of project files
 import gridelem
@@ -40,8 +42,8 @@ import math
 
 savefilename_period = 'Sim_output_period.csv'       # name of save file, location defined by "scenario"
 savefilename_all = 'Sim_output_all.csv'             # name of save file, location defined by "scenario"
-scenario = '01_hist_data//hist_'
-#scenario = '02_synth_data//synth_'
+#scenario = '01_hist_data//hist_'
+scenario = '02_synth_data//synth_'
 
 # ...Activation of simulation functions
 smartbalancing = True      # True: Smart Balancing is globally switched on
@@ -52,13 +54,13 @@ BEPP = 900                  # Balancing Energy Pricing Period (BEPP) in s - only
 imbalance_clearing = 0      # For fuzzy SB: Switch from single imbalance pricing (0) to "combined pricing" as in NL (1)
                             # (2) for traffic light with 3 increments and (3) for traffic light approach with 5 increments
 save_data = True            # True: write the simulation data to .csv
-show_fig = False            # True: show all figures at the end of the simulation
+show_fig = True            # True: show all figures at the end of the simulation
 sb_delay = 0.0              # definition of delay of SB signal in s
 
 # ...Simulation time settings
 t_step = 60                             # simulation time step in s
 t_now = 0                               # start of simulation in s
-t_stop = (31 * 24 * 60 * 60) - t_step  # time, at which the simulation ends in s
+t_stop = (31 * 24 * 60 * 60) - t_step  # time, at which the simulation ends in s, one month
 k_now = 0                               # discrete time variable
 t_day = t_now                           # time of current day in s
 t_isp = 15 * 60                         # duration of an Imbalance Settlement Period in s
@@ -72,7 +74,7 @@ t_vector = []
 k_vector = []
 
 # ...Checking divisibility of time constants
-if (86400 % t_step) != 0:
+if (86400 % t_step) != 0: # 86400 s = 24 h
     sys.exit('ERROR! 86400 must be divisible by t_step!')
 elif (t_isp % t_step) != 0:
     sys.exit('ERROR! t_isp must be divisible by t_step!')
@@ -336,45 +338,11 @@ print('#-----------Day %d-----------#' % day_count)
 # ...Simulation of every time step
 while t_now < t_stop:
 
-    # Update of month count and day_in_month - implement datetime index in the future (with pandas) would avoid this:
-    if day_count > 0 and day_count <= 31:
-        month_count = 1
-        day_in_month = day_count
-    elif day_count > 31 and day_count <= 59:
-        month_count = 2
-        day_in_month = day_count -31
-    elif day_count > 59 and day_count <= 90:
-        month_count = 3
-        day_in_month = day_count - 59
-    elif day_count > 90 and day_count <= 120:
-        month_count = 4
-        day_in_month = day_count - 90
-    elif day_count > 120 and day_count <= 151:
-        month_count = 5
-        day_in_month = day_count - 120
-    elif day_count > 151 and day_count <= 181:
-        month_count = 6
-        day_in_month = day_count - 151
-    elif day_count > 181 and day_count <= 212:
-        month_count = 7
-        day_in_month = day_count - 181
-    elif day_count > 212 and day_count <= 243:
-        month_count = 8
-        day_in_month = day_count - 212
-    elif day_count > 243 and day_count <= 273:
-        month_count = 9
-        day_in_month = day_count - 243
-    elif day_count > 273 and day_count <= 304:
-        month_count = 10
-        day_in_month = day_count - 273
-    elif day_count > 304 and day_count <= 334:
-        month_count = 11
-        day_in_month = day_count - 304
-    elif day_count > 334 and day_count <= 365:
-        month_count = 12
-        day_in_month = day_count - 334
-    else:
-        pass
+    start_date = datetime.strptime(sim_duration_utc[0], '%d.%m.%Y')
+    current_date = start_date + pd.Timedelta(days=day_count)
+
+    month_count = current_date.month
+    day_in_month = current_date.day
 
     if t_day >= 86400:
         day_count += 1
