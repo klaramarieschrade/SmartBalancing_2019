@@ -169,7 +169,7 @@ def get_balancing_groups(scenario, sb_ON, sim_duration):
                                                                                  sb_costs=0.0,
                                                                                  bg_name=obj_balancing_groups[count].name))
              else:   # separator "," in the row
-                 loads_list = array_loadsr.split(',')  # separate the row by "," and loop through list
+                 loads_list = array_loads.split(',')  # separate the row by "," and loop through list
                  for counter in range(len(loads_list)):
                      obj_balancing_groups[count].array_loads.append(loadload.LoadFlex(name=str(loads_list[counter]),
                                                                                      read=True,

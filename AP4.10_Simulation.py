@@ -43,7 +43,8 @@ import math
 savefilename_period = 'Sim_output_period.csv'       # name of save file, location defined by "scenario"
 savefilename_all = 'Sim_output_all.csv'             # name of save file, location defined by "scenario"
 #scenario = '01_hist_data//hist_'
-scenario = '02_synth_data//synth_'
+#scenario = '02_synth_data//synth_'
+scenario = '03_validation_data//vali_'
 
 # ...Activation of simulation functions
 smartbalancing = True      # True: Smart Balancing is globally switched on
@@ -186,7 +187,7 @@ if scenario == '01_hist_data//hist_':
     CA1.array_aFRR_molpos, CA1.array_aFRR_molneg = fileexch.read_afrr_mol(scenario, 0, 0, 0)
     CA1.array_mFRR_molpos, CA1.array_mFRR_molneg = fileexch.read_mfrr_mol(scenario, 0, 0, 0)
 
-elif FRR_pricing == 0:  #synthetic MOL for pay-as-bid
+elif FRR_pricing == 0:  #synthetic MOL for pay-as-bid --> created in code, not read from csv
 
     # dicts for pos and neg MOL
     aFRR_molpos = {'Power': [],
@@ -316,7 +317,7 @@ SZ.afrr_init(t_step=t_step)
 t_vector.append(t_now)
 k_vector.append(k_now)
 
-SZ.readarray(k_now)
+SZ.readarray(k_now) # read arrays with time series consumption, consumption scheduled, generation, generation scheduled gets values for t_now/k_now
 SZ.gen_calc()
 SZ.load_calc()
 SZ.schedule_init()
@@ -451,6 +452,24 @@ if save_data:
                  'Chlorine Power [MW]': CA1.array_balancinggroups[21].array_sb_P,
                  'Gas Power [MW]': CA1.array_balancinggroups[3].array_sb_P
                 }
+    plt.figure(1)
+    plt.plot(t_vector, SZ.array_f)
+    plt.title(SZ.name)
+    plt.grid()
+    plt.xlabel('time / s, all 31 days of Simulation')
+    plt.ylabel('Frequency / Hz')
+    
+
+    plt.figure(2)
+    plt.plot(t_vector, CA1.array_gen_P,
+             t_vector, CA1.array_gen_P_schedule)
+    plt.title('Scheduled and generated power')
+    plt.grid()
+    plt.xlabel('time / s, all 31 days of Simulation')
+    plt.ylabel('Power / MW')
+    plt.legend(['Generated power', 'Scheduled power'])
+    plt.show()
+
     fileexch.save_t_step_data(scenario=scenario,
                               save_file_name=savefilename_all,
                               save_dict=save_dict,
@@ -569,6 +588,14 @@ if show_fig:
         plt.legend([CA1.array_balancinggroups[14].name,
                     CA1.array_balancinggroups[15].name,
                     CA1.array_balancinggroups[16].name])
+        
+        plt.figure(8)
+        plt.plot(t_vector, SZ.array_f)
+        plt.title(SZ.name)
+        plt.grid()
+        plt.xlabel('time / s, all 31 days of Simulation')
+        plt.ylabel('Frequency / Hz')
+
 
         plt.show()
 

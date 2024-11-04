@@ -275,12 +275,12 @@ for j in range(len(scenario_files)):
 Energie_Summen = scenario_sum_df.filter(['GER pos. energy aFRR [MWh]', 'GER neg. energy aFRR [MWh]', 'GER pos. energy mFRR [MWh]', 'GER neg. energy mFRR [MWh]'], axis=0)/1000
 Energie_Summen.plot.bar(title='Comparison of Balancing Energy')
 plt.ylabel('balancing energy in GWh')
-Energie_Summen.to_csv("energie_summen_synth.csv")
+Energie_Summen.to_csv("02_synth_data\energie_summen_synth.csv")
 
 Kosten_Summen = scenario_sum_df.filter(['GER pos. aFRR costs [EUR]','GER neg. aFRR costs [EUR]', 'GER pos. mFRR costs [EUR]','GER neg. mFRR costs [EUR]'], axis=0)/1000000
 Kosten_Summen.plot.bar(title='Comparison of Costs')
 plt.ylabel('costs in mio. €')
-Kosten_Summen.to_csv("kosten_summen_synth.csv")
+Kosten_Summen.to_csv("02_synth_data\kosten_summen_synth.csv")
 
 #print(frequency_df['f [Hz]'])
 

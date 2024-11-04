@@ -378,24 +378,19 @@ class CalculatingGridElement(GridElement):
 
         self.FRCE_cl_pos = self.FRCE_ol_pos - self.aFRR_P_pos
         self.FRCE_cl_neg = self.FRCE_ol_neg - self.aFRR_P_neg
-
-        self.aFRR_ref_pos = (self.aFRR_ref_pos + (1 / t_step)
-                         * (self.aFRR_beta + t_step / 2
-                         * (1 / self.aFRR_T * t_step))
-                         * self.FRCE_cl_pos + (1 / t_step)
-                         * (-self.aFRR_beta + t_step / 2
-                         * (1 / self.aFRR_T * t_step))
-                         * self.FRCE_cl_pos_before)
+    
+    #Diskretisierung des PI-Reglers unter Verwendung der Trapezregel, skalierierung mit 1/t_step unnötig
+        self.aFRR_ref_pos = self.aFRR_ref_pos + (
+            (self.aFRR_beta/t_step + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos + 
+            (-self.aFRR_beta/t_step + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos_before
+        )
         self.aFRR_pos_queue.append(self.aFRR_ref_pos)
         self.aFRR_P_pos = self.aFRR_pos_queue.pop(0)
 
-        self.aFRR_ref_neg = (self.aFRR_ref_neg + (1 / t_step)
-                         * (self.aFRR_beta + t_step / 2
-                         * (1 / self.aFRR_T * t_step))
-                         * self.FRCE_cl_neg + (1 / t_step)
-                         * (-self.aFRR_beta + t_step / 2
-                         * (1 / self.aFRR_T * t_step))
-                         * self.FRCE_cl_neg_before)
+        self.aFRR_ref_neg = self.aFRR_ref_neg + (
+            (self.aFRR_beta + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_neg + 
+            (-self.aFRR_beta + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_neg_before
+        )
         self.aFRR_neg_queue.append(self.aFRR_ref_neg)
         self.aFRR_P_neg = self.aFRR_neg_queue.pop(0)
 
@@ -867,27 +862,21 @@ class ControlArea(CalculatingGridElement):
     def afrr_calc(self, f_delta, k_now, t_now, t_step, t_isp, fuzzy,imbalance_clearing,BEPP):
         self.FRCE_cl_pos_before = self.FRCE_cl_pos
         self.FRCE_cl_neg_before = self.FRCE_cl_neg
-
+        #ACE = FRCE_ol
         self.FRCE_cl_pos = self.FRCE_ol_pos - self.aFRR_P_pos
         self.FRCE_cl_neg = self.FRCE_ol_neg - self.aFRR_P_neg
         #PI-Regler für aFRR
-        self.aFRR_ref_pos = (self.aFRR_ref_pos + (1 / t_step)
-                         * (self.aFRR_beta + t_step / 2
-                         * (1 / self.aFRR_T * t_step))
-                         * self.FRCE_cl_pos + (1 / t_step)
-                         * (-self.aFRR_beta + t_step / 2
-                         * (1 / self.aFRR_T * t_step))
-                         * self.FRCE_cl_pos_before)
+        self.aFRR_ref_pos = self.aFRR_ref_pos + (
+            (self.aFRR_beta/t_step + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos + 
+            (-self.aFRR_beta/t_step + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos_before
+        )
         self.aFRR_pos_queue.append(self.aFRR_ref_pos)
         self.aFRR_P_pos = self.aFRR_pos_queue.pop(0)
 
-        self.aFRR_ref_neg = (self.aFRR_ref_neg + (1 / t_step)
-                         * (self.aFRR_beta + t_step / 2
-                         * (1 / self.aFRR_T * t_step))
-                         * self.FRCE_cl_neg + (1 / t_step)
-                         * (-self.aFRR_beta + t_step / 2
-                         * (1 / self.aFRR_T * t_step))
-                         * self.FRCE_cl_neg_before)
+        self.aFRR_ref_neg = self.aFRR_ref_neg + (
+            (self.aFRR_beta + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_neg + 
+            (-self.aFRR_beta + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_neg_before
+        )
         self.aFRR_neg_queue.append(self.aFRR_ref_neg)
         self.aFRR_P_neg = self.aFRR_neg_queue.pop(0)
 
@@ -931,7 +920,8 @@ class ControlArea(CalculatingGridElement):
             i.afrr_calc(t_now=t_now,
                         t_step=t_step,
                         t_isp=t_isp,
-                        AEP=self.AEP)
+                        AEP=self.AEP) #AEP wurde in vorherigem Schritt berechnet
+            #aFFR_calc ist definiert in class BalancingGroup, berechnet erzeugte, verbrauchte und geplante Energie pro BK per ISP
             i.sb_calc(FRCE_sb=self.FRCE_sb,
                       old_FRCE_sb = self.old_FRCE_sb,
                       d_Imba = self.delta_FRCE_sb,
