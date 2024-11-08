@@ -1,3 +1,3 @@
 Balancing Group;Load;Generator;Flex Load;Flex Generator;smart
-Generator_1;-;Gen 1;-;_;False
-Last_1; Last 1;-;-;-;False
+Gen;-;Gen 1;-;-;False
+Last;Last 1;-;-;-;False

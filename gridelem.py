@@ -336,7 +336,7 @@ class CalculatingGridElement(GridElement):
     def imba_calc(self):
         self.imba_P_ph = self.gen_P - self.load_P + self.aFRR_P + self.sb_P
         self.imba_P_sc = self.gen_P - self.gen_P_schedule - self.load_P + self.load_P_schedule + self.aFRR_P + self.mFRR_P
-        self.FRCE = - self.imba_P_sc
+        self.FRCE = - self.imba_P_sc # nur in sb_signal(self) wird FRCE verwendet
         self.FRCE_ol = self.gen_P_schedule - self.gen_P + self.load_P - self.load_P_schedule
         if self.FRCE_ol > 0:
             self.FRCE_ol_pos = self.FRCE_ol
@@ -381,8 +381,8 @@ class CalculatingGridElement(GridElement):
     
     #Diskretisierung des PI-Reglers unter Verwendung der Trapezregel, skalierierung mit 1/t_step unnötig
         self.aFRR_ref_pos = self.aFRR_ref_pos + (
-            (self.aFRR_beta/t_step + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos + 
-            (-self.aFRR_beta/t_step + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos_before
+            (self.aFRR_beta + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos + 
+            (-self.aFRR_beta + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos_before
         )
         self.aFRR_pos_queue.append(self.aFRR_ref_pos)
         self.aFRR_P_pos = self.aFRR_pos_queue.pop(0)
@@ -809,11 +809,12 @@ class ControlArea(CalculatingGridElement):
     # The method sums up the imbalance of all subordinated Balancing Groups
     def imba_calc(self):
         for i in self.array_balancinggroups:
-            i.imba_calc()
+            i.imba_calc() #speichert jeweilige Ungleichgewichte imba_P_ph und imba_P_sc der jeweiligen Balancing Group ab
         self.imba_P_ph = self.gen_P - self.load_P + self.aFRR_P + self.mFRR_P + self.sb_P #imba_P_ph: imbalance in physical power
         self.imba_P_sc = self.gen_P - self.gen_P_schedule - self.load_P + self.load_P_schedule + self.sb_P #imba_P_sc: imbalance in scheduled power
-        self.FRCE = - self.imba_P_sc
-        self.FRCE_ol = - self.imba_P_sc - self.mFRR_P #FRCE_ol: open loop FRCE signal
+        self.FRCE = - self.imba_P_sc #Vorzeichen muss geänderte werden damit mit Annahme von RKN passt: KW-Ausfall bedeutet positive Störung
+        self.FRCE_ol = - self.imba_P_sc - self.mFRR_P #Vorzeichen muss geändert werden, FRCE_ol: open loop FRCE signal
+
         if self.FRCE_ol > 0:
             self.FRCE_ol_pos = self.FRCE_ol
             self.FRCE_ol_neg = 0.0
@@ -867,8 +868,8 @@ class ControlArea(CalculatingGridElement):
         self.FRCE_cl_neg = self.FRCE_ol_neg - self.aFRR_P_neg
         #PI-Regler für aFRR
         self.aFRR_ref_pos = self.aFRR_ref_pos + (
-            (self.aFRR_beta/t_step + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos + 
-            (-self.aFRR_beta/t_step + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos_before
+            (self.aFRR_beta + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos + 
+            (-self.aFRR_beta + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos_before
         )
         self.aFRR_pos_queue.append(self.aFRR_ref_pos)
         self.aFRR_P_pos = self.aFRR_pos_queue.pop(0)
@@ -1644,6 +1645,7 @@ class ControlArea(CalculatingGridElement):
         self.mFRR_costs_neg_period += -abs(self.mFRR_P_neg) * self.mFRR_price_neg_avg * t_step / 3600
 
     # Method calculating the "Ausgleichsenergiepreis" (AEP)
+    
     def aep_calc(self, t_now, t_step, t_isp, da_price, FRCE):
         # Calculation of AEP1
         if self.aFRR_E_pos == 0 and self.aFRR_E_neg == 0 and self.mFRR_E_pos == 0 and self.mFRR_E_neg == 0:
@@ -1659,7 +1661,7 @@ class ControlArea(CalculatingGridElement):
                 self.AEP = 0.0
             else:
                 self.AEP = FRR_costs / FRR_energy
-
+        '''
         # Calculation of AEP2
         # Limitation of the AEP to the highest absolute value in all activated aFRR and mFRR prices during an ISP
         if abs(self.aFRR_price_pos_max) > abs(self.aFRR_price_neg_max):
@@ -1721,7 +1723,7 @@ class ControlArea(CalculatingGridElement):
                 self.AEP = self.AEP-(0.5*abs(self.AEP))
         else:
             pass
-
+        '''
 
     # Method processing the FRCE_cl of the Control Area to create a control signal (FRCE_sb) for Smart Balancing
     def sb_signal(self):
