@@ -12,12 +12,12 @@ import matplotlib.pyplot as plt
 # define location and name of files to set path
 # ===============================================================================
 
-location = "results/"
+location = "02_synth_data/results/"
 #location = "results_sin/"
 #location = "results_5d/"
 #location = "results_1d/"
 
-if location == "results/":
+if location == "02_synth_data/results/":
         scenario_files = ['6 no SB PAB','7 DEs', '8 NLs','9 no SB MP','10 BEPP15','11 BEPP1']
         scenario_path = ['6 no SB PAB','7 DEs', '8 NLs','9 no SB MP','10 BEPP15','11 BEPP1']
 
@@ -29,7 +29,7 @@ if location == "results_sin/" or location == "results_1d/":
 #define start and end of example plots
 # ===============================================================================
 example_plot = True
-if location == "results_sin/" or location == "results_1d/" or location == "results/":
+if location == "results_sin/" or location == "results_1d/" or location == "02_synth_data/results/":
         start = ["2019-01-01 5:00","2019-01-01 9:00","2019-01-01 14:25"]
         end = ["2019-01-01 7:45","2019-01-01 9:45","2019-01-01 15:45"]
 
@@ -70,13 +70,13 @@ frequency_df = pd.DataFrame()
 for j in range(len(scenario_files)):
 
         #read "period" csv files with ISP resolution (15min)
-        scenario_path[j]= location+scenario_files[j]+'/synth_sim_output_period.csv'
+        scenario_path[j]= location+scenario_files[j]+'/synth_Sim_output_period.csv'
 
         #print('Scenario: ',scenario_path[j])
         scenario_period = pd.read_csv(scenario_path[j], sep=';', encoding='latin-1').round(1)
 
         #read "all" csv file with all timesteps in 1 min resolution
-        scenario_path[j] = location + scenario_files[j] + '/synth_sim_output_all.csv'
+        scenario_path[j] = location + scenario_files[j] + '/synth_Sim_output_all.csv'
         minute_data = pd.read_csv(scenario_path[j], sep=';', encoding='latin-1')
 
         print('Data load completed: ', scenario_path[j])

@@ -107,7 +107,7 @@ class BalancingGroup:
         self.array_sb_molneg = []
 
     def schedule_init(self):
-        if self.read:
+        if self.read: #True
             self.gen_P_schedule = self.array_gen_P_schedule[1]
             self.load_P_schedule = self.array_load_P_schedule[1]
         else:

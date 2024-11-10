@@ -8,8 +8,8 @@ historic_ACE = False   # False: overwrite historic ACE with synthetic ACE
 
 marginal_pricing = False  #False: higher ACE applies for pay-as-bid
 
-synth_Generation1 = pd.read_csv("hist_Generation_1.csv",sep=";",decimal=".")
-synth_Generation2 = pd.read_csv("hist_Generation_2.csv",sep=";",decimal=".")
+synth_Generation1 = pd.read_csv("01_hist_data/hist_Generation_1.csv",sep=";",decimal=".")
+synth_Generation2 = pd.read_csv("01_hist_data/hist_Generation_2.csv",sep=";",decimal=".")
 synth_Generation = pd.concat([synth_Generation1, synth_Generation2], axis=1, sort=False)
 
 
@@ -17,7 +17,7 @@ synth_Generation = pd.concat([synth_Generation1, synth_Generation2], axis=1, sor
 if historic_ACE:
 
     # save synth_Generation.csv file for simulation
-    synth_Generation.to_csv("synth_Generation.csv", sep=";", decimal=".", index=False)
+    synth_Generation.to_csv("02_synth_data/synth_Generation.csv", sep=";", decimal=".", index=False)
 
 else: #overwrite historic ACE with synthetic ACE (sACE)
     sACE = pd.DataFrame()
@@ -54,4 +54,4 @@ else: #overwrite historic ACE with synthetic ACE (sACE)
     synth_Generation['FRCE Gen'] = sACE['ACE']
 
     #save new WC Generation file (without index) for simulation
-    synth_Generation['00:00 01.01.2019':'00:00 02.01.2019'].to_csv("synth_Generation.csv",sep=";",decimal=".",index=False)
+    synth_Generation['00:00 01.01.2019':'00:00 02.01.2019'].to_csv("02_synth_data/synth_Generation.csv",sep=";",decimal=".",index=False)
