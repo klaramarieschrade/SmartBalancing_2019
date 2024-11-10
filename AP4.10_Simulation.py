@@ -133,6 +133,7 @@ CA0 = gridelem.CalculatingGridElement(name='Rest des UCTE Netzes',
                                       gen_P=300000.0,
                                       load_P=300000.0,
                                       FCR_lambda=13500.0,
+                                      FCR_delay=0.0,
                                       aFRR_Kr=14000.0,
                                       aFRR_T=170.0,
                                       aFRR_beta=0.1,
@@ -140,6 +141,7 @@ CA0 = gridelem.CalculatingGridElement(name='Rest des UCTE Netzes',
 SZ.array_subordinates.append(CA0)
 
 CA1 = gridelem.ControlArea(name='Deutschland',
+                           FCR_delay=0.0,
                            FCR_lambda=1500.0,
                            aFRR_Kr=1550.0,
                            aFRR_T=250.0,
@@ -311,7 +313,7 @@ print('#-----------Day %d-----------#' % day_count)
 start = time.time()
 
 # ...Initialization of FCR and aFRR parameters
-SZ.fcr_init()
+SZ.fcr_init(t_step=t_step)
 SZ.afrr_init(t_step=t_step)
 
 t_vector.append(t_now)
@@ -324,8 +326,7 @@ SZ.schedule_init()
 SZ.gen_schedule_calc()
 SZ.load_schedule_calc()
 SZ.imba_calc()
-SZ.f_calc()
-print(SZ.FCR_lambda)
+SZ.f_calc(t_step=t_step)
 SZ.fcr_calc()
 SZ.afrr_calc(k_now=k_now, t_now=t_now, t_step=t_step, t_isp=t_isp, fuzzy=fuzzy,imbalance_clearing=imbalance_clearing,BEPP=BEPP)
 SZ.mfrr_calc(t_now=t_now, t_step=t_step, t_isp=t_isp)
@@ -381,7 +382,7 @@ while t_now < t_stop:
     SZ.load_schedule_calc()
     SZ.imba_calc()
 # 3. calculate frequency deviation and FCR
-    SZ.f_calc()
+    SZ.f_calc(t_step=t_step)
     SZ.fcr_calc()
 # 4. calculate FRR and resulting cost / prices. Smart Balancing is calculated in afrr_calc
     SZ.afrr_calc(k_now=k_now, t_now=t_now, t_step=t_step, t_isp=t_isp, fuzzy=fuzzy,imbalance_clearing=imbalance_clearing,BEPP=BEPP)
@@ -402,6 +403,7 @@ print('Simulation time: %.1f seconds\n' % (time.time() - start))
 
 if save_data:
     save_dict = {'time [s]': t_vector,
+                 'GER FCR Power [MW]': CA1.array_FCR_P,
                  'GER pos. energy aFRR [MWh]': CA1.array_aFRR_E_pos_period,
                  'GER neg. energy aFRR [MWh]': CA1.array_aFRR_E_neg_period,
                  'GER pos. aFRR costs [EUR]': CA1.array_aFRR_costs_pos_period,
@@ -436,6 +438,7 @@ if save_data:
                  'f [Hz]': SZ.array_f,
                  'FRCE [MW]': CA1.array_FRCE,
                  'aFRR FRCE (open loop) [MW]': CA1.array_FRCE_ol,
+                 'FCR P [MW]': CA1.array_FCR_P,
                  'aFRR P [MW]': CA1.array_aFRR_P,
                  'mFRR P [MW]': CA1.array_mFRR_P,
                  'insufficient pos. aFRR': CA1.array_aFRR_pos_insuf,
@@ -454,6 +457,14 @@ if save_data:
                  #'Chlorine Power [MW]': CA1.array_balancinggroups[21].array_sb_P,
                  #'Gas Power [MW]': CA1.array_balancinggroups[3].array_sb_P
                 }
+    
+    fileexch.save_t_step_data(scenario=scenario,
+                              save_file_name=savefilename_all,
+                              save_dict=save_dict,
+                              t_step=t_step,
+                              t_isp=t_isp,
+                              t_stop=t_stop)
+
     plt.figure(1)
     plt.plot(t_vector, SZ.array_f)
     plt.title(SZ.name)
@@ -475,13 +486,15 @@ if save_data:
 
     plt.figure(3)
     plt.plot(#t_vector, #CA1.array_FRCE,
-                t_vector, CA1.array_FRCE_cl_pos,
-                t_vector, CA1.array_FRCE_cl_neg,
-                t_vector, CA1.array_aFRR_P_pos,
-                t_vector, CA1.array_aFRR_P_neg,
+                t_vector, CA1.array_FCR_P,
+                t_vector, CA1.array_aFRR_P)
+                #t_vector, CA1.array_FRCE_cl_pos,
+                #t_vector, CA1.array_FRCE_cl_neg,
+                #t_vector, CA1.array_aFRR_P_pos,
+                #t_vector, CA1.array_aFRR_P_neg,
                 #t_vector, CA1.array_mFRR_P_pos,
                 #t_vector, CA1.array_mFRR_P_neg)
-    )
+    
     plt.title(CA1.name)
     grapfunc.add_vert_lines(plt=plt, period=t_isp, t_stop=t_stop, color='gray', linestyle='dotted', linewidth=0.5)
     grapfunc.add_vert_lines(plt=plt, period=t_mol, t_stop=t_stop, color='black', linestyle='dashed', linewidth=0.5)
@@ -490,15 +503,10 @@ if save_data:
     plt.xlabel('time / s')
     plt.ylabel('Power / MW')
     #plt.legend(['FRCE', 'aFRR_P_pos', 'aFRR_P_neg', 'mFRR_P_pos', 'mFRR_P_neg'])
-    plt.legend(['FRCE_cl_pos','FRCE_cl_neg','aFRR_P_pos', 'aFRR_P_neg'])
+    plt.legend(['P_FCR', 'aFRR_P_neg'])
     plt.show()
 
-    fileexch.save_t_step_data(scenario=scenario,
-                              save_file_name=savefilename_all,
-                              save_dict=save_dict,
-                              t_step=t_step,
-                              t_isp=t_isp,
-                              t_stop=t_stop)
+    
     print('Simulation results for all t_step were saved in file', savefilename_all)
 else:
     print('\nAttention! The data was not saved due to settings!')

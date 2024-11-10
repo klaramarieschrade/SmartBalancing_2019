@@ -139,10 +139,10 @@ class GridElement:
 
     # Method calculating the FCR parameter 'FCR_lambda' of the grid element.
     # The method sums up 'FCR_lambda' of all subordinated grid elements
-    def fcr_init(self):
+    def fcr_init(self,t_step):
         self.FCR_lambda = 0.0
         for i in self.array_subordinates:
-            i.fcr_init()
+            i.fcr_init(t_step=t_step)
             self.FCR_lambda += i.FCR_lambda
 
     # Method calculating the activated FCR power of the grid element.
@@ -257,6 +257,7 @@ class CalculatingGridElement(GridElement):
                  gen_P,             # generator power in MW                         (float)
                  load_P,            # load in MW                                    (float)
                  FCR_lambda,        # FCR parameter 'lambda' in MW/Hz               (float)
+                 FCR_delay,         # delay time for the activation of FCR in s     (float)
                  aFRR_Kr,           # aFRR constant 'Kr' in MW/Hz                   (float)
                  aFRR_T,            # aFRR time constant 'T' in s                   (float)
                  aFRR_beta,         # aFRR constant 'beta' in p.u.                  (float)
@@ -272,6 +273,16 @@ class CalculatingGridElement(GridElement):
 
         # FCR constants
         self.FCR_lambda = FCR_lambda
+        self.FCR_delay = FCR_delay
+        
+        #FCR variables
+        self.FCR_P_ref = 0.0
+
+        self.array_FCR_P_ref = []
+
+        # Array acting as delay of FCR activation
+        self.FCR_queue_len = 0
+        self.FCR_queue = []
 
         # FRCE signal
         self.FRCE = 0.0
@@ -350,13 +361,22 @@ class CalculatingGridElement(GridElement):
         else:
             pass
 
-    def fcr_init(self):
+    def fcr_init(self, t_step):
         pass
+        #self.FCR_queue_len = math.ceil(self.FCR_delay / t_step)
+        #i = 0
+        #while i < self.FCR_queue_len:
+            #self.FCR_queue.append(self.FCR_P_ref)
+            #i += 1
 
     # Method calculating the activated FCR power
     # as function of a frequency deviation and 'FCR_lambda'.
     def fcr_calc(self, f_delta):
+        #self.FCR_P_ref = -(self.FCR_lambda * f_delta)
         self.FCR_P = -(self.FCR_lambda * f_delta)
+        #Dynamik FCR noch nicht korrekt
+        #self.FCR_queue.append(self.FCR_P_ref)
+        #self.FCR_P = self.FCR_queue.pop(0)
 
     # Method initializing an array acting as the time delay for the activation of aFRR
     # The array has one element for each time step, that the signal is delayed.
@@ -430,6 +450,7 @@ class CalculatingGridElement(GridElement):
         self.array_imba_P_ph.append(self.imba_P_ph)
         self.array_imba_P_sc.append(self.imba_P_sc)
         self.array_FCR_P.append(self.FCR_P)
+        self.array_FCR_P_ref.append(self.FCR_P_ref)
         self.array_FRCE.append(self.FRCE)
         self.array_FRCE_ol.append(self.FRCE_ol)
         self.array_FRCE_ol_pos.append(self.FRCE_ol_pos)
@@ -477,9 +498,11 @@ class SynchronousZone(GridElement):
         self.f_nom = f_nom
         self.f = f_nom
         self.f_delta = 0.0
+        self.delta_P = 0.0
 
         self.array_f = []
-
+        self.array_delta_P = []
+        
         # Other parameters and variables are inherited from the super class 'GridElement'.
         # Therefore, the contructor method of the super class is called to initialize these parameters and variables.
         GridElement.__init__(self,
@@ -488,9 +511,11 @@ class SynchronousZone(GridElement):
     # Method calculating the system frequency and the frequency deviation
     # as a function of the system wide imbalance of generation and load
     # and the FCR constant 'FCR_lambda'.
-    def f_calc(self):
-        self.f_delta = self.imba_P_ph / self.FCR_lambda
-        self.f = self.f_nom + self.f_delta
+    def f_calc(self, t_step):
+        self.delta_P_before = self.delta_P
+        self.delta_P = - self.imba_P_sc - self.FCR_P - self.aFRR_P - self.mFRR_P
+        self.f = 50/(300000*12) * t_step/2 * (self.delta_P_before - self.delta_P) 
+        self.f_delta = self.f_nom - self.f
 
     # Method calculating the activated FCR power of the system.
     # The method sums up the activated FCR power of all subordinated grid elements
@@ -534,6 +559,7 @@ class SynchronousZone(GridElement):
         for i in self.array_subordinates:
             i.write_results()
         self.array_f.append(self.f)
+        self.array_delta_P.append(self.delta_P)
         self.array_gen_P.append(self.gen_P)
         self.array_load_P.append(self.load_P)
         self.array_gen_P_schedule.append(self.gen_P_schedule)
@@ -572,6 +598,7 @@ class ControlArea(CalculatingGridElement):
     # The FCR and aFRR constants correspond the UCTE grid code.
     def __init__(self,
                  name,                  # name of the grid element                                          (string)
+                 FCR_delay,             # delay time for the activation of FCR in s                         (float)
                  FCR_lambda,            # FCR parameter 'lambda' in MW/Hz                                   (float)
                  aFRR_Kr,               # aFRR constant 'Kr' in MW/Hz                                       (float)
                  aFRR_T,                # aFRR time constant 'T' in s                                       (float)
@@ -594,6 +621,7 @@ class ControlArea(CalculatingGridElement):
                                         gen_P=0.0,
                                         load_P=0.0,
                                         FCR_lambda=FCR_lambda,
+                                        FCR_delay=FCR_delay,
                                         aFRR_Kr=aFRR_Kr,
                                         aFRR_T=aFRR_T,
                                         aFRR_beta=aFRR_beta,
@@ -781,6 +809,16 @@ class ControlArea(CalculatingGridElement):
         self.gen_P_schedule = self.gen_P
         self.load_P_schedule = self.load_P
 
+    # Method initializing an array acting as the time delay for the activation of FCR
+    # The array has one element for each time step, that the signal is delayed.
+    # All element of the array are set to zero.
+    def fcr_init(self, t_step):
+        self.FCR_queue_len = math.ceil(self.FCR_delay / t_step)
+        i = 0
+        while i < self.FCR_queue_len:
+            self.FCR_queue.append(self.FCR_ref)
+            i += 1
+
     # Method initializing an array acting as the time delay for the activation of aFRR
     # The array has one element for each time step, that the signal is delayed.
     # All element of the array are set to zero.
@@ -809,11 +847,11 @@ class ControlArea(CalculatingGridElement):
     # The method sums up the imbalance of all subordinated Balancing Groups
     def imba_calc(self):
         for i in self.array_balancinggroups:
-            i.imba_calc() #speichert jeweilige Ungleichgewichte imba_P_ph und imba_P_sc der jeweiligen Balancing Group ab
+            i.imba_calc() #speichert Ungleichgewichte imba_P_ph und imba_P_sc der jeweiligen Balancing Group ab
         self.imba_P_ph = self.gen_P - self.load_P + self.aFRR_P + self.mFRR_P + self.sb_P #imba_P_ph: imbalance in physical power
         self.imba_P_sc = self.gen_P - self.gen_P_schedule - self.load_P + self.load_P_schedule + self.sb_P #imba_P_sc: imbalance in scheduled power
         self.FRCE = - self.imba_P_sc #Vorzeichen muss geänderte werden damit mit Annahme von RKN passt: KW-Ausfall bedeutet positive Störung
-        self.FRCE_ol = - self.imba_P_sc - self.mFRR_P #Vorzeichen muss geändert werden, FRCE_ol: open loop FRCE signal
+        self.FRCE_ol = - self.imba_P_sc - self.mFRR_P #- self.FCR_P #Vorzeichen muss geändert werden, FRCE_ol: open loop FRCE signal
 
         if self.FRCE_ol > 0:
             self.FRCE_ol_pos = self.FRCE_ol
@@ -856,6 +894,15 @@ class ControlArea(CalculatingGridElement):
         self.load_P_schedule = 0.0
         for i in self.array_balancinggroups:
             self.load_P_schedule += i.load_P_schedule
+
+    # Method calculating the activated FCR power
+    # as function of a frequency deviation and 'FCR_lambda'.
+    def fcr_calc(self, f_delta):
+        #self.FCR_P_ref = -(self.FCR_lambda * f_delta)
+        self.FCR_P = -(self.FCR_lambda * f_delta)
+        #Dynamik FCR noch nicht korrekt
+        #self.FCR_queue.append(self.FCR_P_ref)
+        #self.FCR_P = self.FCR_queue.pop(0)
 
     # Method calculating the activated aFRR power of the system.
     # Added call of method afrr_price_calc for this class.
@@ -922,7 +969,7 @@ class ControlArea(CalculatingGridElement):
                         t_step=t_step,
                         t_isp=t_isp,
                         AEP=self.AEP) #AEP wurde in vorherigem Schritt berechnet
-            #aFFR_calc ist definiert in class BalancingGroup, berechnet erzeugte, verbrauchte und geplante Energie pro BK per ISP
+            #aFRR_calc ist definiert in class BalancingGroup, berechnet erzeugte, verbrauchte und geplante Energie pro BK per ISP
             i.sb_calc(FRCE_sb=self.FRCE_sb,
                       old_FRCE_sb = self.old_FRCE_sb,
                       d_Imba = self.delta_FRCE_sb,
@@ -1817,6 +1864,7 @@ class ControlArea(CalculatingGridElement):
         self.array_imba_P_ph.append(self.imba_P_ph)
         self.array_imba_P_sc.append(self.imba_P_sc)
         self.array_FCR_P.append(self.FCR_P)
+        self.array_FCR_P_ref.append(self.FCR_P_ref)
         self.array_FRCE.append(self.FRCE)
         self.array_FRCE_ol.append(self.FRCE_ol)
         self.array_FRCE_ol_pos.append(self.FRCE_ol_pos)
