@@ -381,15 +381,15 @@ class CalculatingGridElement(GridElement):
     
     #Diskretisierung des PI-Reglers unter Verwendung der Trapezregel, skalierierung mit 1/t_step unnötig
         self.aFRR_ref_pos = self.aFRR_ref_pos + (
-            (self.aFRR_beta + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos + 
-            (-self.aFRR_beta + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos_before
+            (self.aFRR_beta/t_step + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos + 
+            (-self.aFRR_beta/t_step + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos_before
         )
         self.aFRR_pos_queue.append(self.aFRR_ref_pos)
         self.aFRR_P_pos = self.aFRR_pos_queue.pop(0)
 
         self.aFRR_ref_neg = self.aFRR_ref_neg + (
-            (self.aFRR_beta + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_neg + 
-            (-self.aFRR_beta + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_neg_before
+            (self.aFRR_beta/t_step + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_neg + 
+            (-self.aFRR_beta/t_step + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_neg_before
         )
         self.aFRR_neg_queue.append(self.aFRR_ref_neg)
         self.aFRR_P_neg = self.aFRR_neg_queue.pop(0)
@@ -868,15 +868,15 @@ class ControlArea(CalculatingGridElement):
         self.FRCE_cl_neg = self.FRCE_ol_neg - self.aFRR_P_neg
         #PI-Regler für aFRR
         self.aFRR_ref_pos = self.aFRR_ref_pos + (
-            (self.aFRR_beta + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos + 
-            (-self.aFRR_beta + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos_before
+            (self.aFRR_beta/t_step + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos + 
+            (-self.aFRR_beta/t_step + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos_before
         )
         self.aFRR_pos_queue.append(self.aFRR_ref_pos)
         self.aFRR_P_pos = self.aFRR_pos_queue.pop(0)
 
         self.aFRR_ref_neg = self.aFRR_ref_neg + (
-            (self.aFRR_beta + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_neg + 
-            (-self.aFRR_beta + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_neg_before
+            (self.aFRR_beta/t_step + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_neg + 
+            (-self.aFRR_beta/t_step + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_neg_before
         )
         self.aFRR_neg_queue.append(self.aFRR_ref_neg)
         self.aFRR_P_neg = self.aFRR_neg_queue.pop(0)
@@ -1245,7 +1245,7 @@ class ControlArea(CalculatingGridElement):
     # Method calculating the activated mFRR power of the Control Area
     def mfrr_calc(self, t_now, t_step, t_isp):
         # mFRR activation using the average FRCE
-        if t_now == 0:
+        if t_now == 0: #muss angepasst werden, wenn man andere Startzeitpunkte als 1.1.2019 hat
             self.array_FRCE_avg = []
             self.FRCE_sum = 0.0
             self.FRCE_avg = 0.0
@@ -1661,7 +1661,7 @@ class ControlArea(CalculatingGridElement):
                 self.AEP = 0.0
             else:
                 self.AEP = FRR_costs / FRR_energy
-        '''
+        
         # Calculation of AEP2
         # Limitation of the AEP to the highest absolute value in all activated aFRR and mFRR prices during an ISP
         if abs(self.aFRR_price_pos_max) > abs(self.aFRR_price_neg_max):
@@ -1723,7 +1723,6 @@ class ControlArea(CalculatingGridElement):
                 self.AEP = self.AEP-(0.5*abs(self.AEP))
         else:
             pass
-        '''
 
     # Method processing the FRCE_cl of the Control Area to create a control signal (FRCE_sb) for Smart Balancing
     def sb_signal(self):

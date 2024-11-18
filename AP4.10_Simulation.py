@@ -40,15 +40,15 @@ import math
 # ---DEFINITION OF SIMULATION PARAMETERS----------------------------------------------
 # ------------------------------------------------------------------------------------
 
-savefilename_period = 'Sim_output_period.csv'       # name of save file, location defined by "scenario"
-savefilename_all = 'Sim_output_all.csv'             # name of save file, location defined by "scenario"
-#scenario = '01_hist_data//hist_'
+savefilename_period = 'Sim_output_period_SB_pab_sip_sim_jan_2019_vali.csv'       # name of save file, location defined by "scenario"
+savefilename_all = 'Sim_output_all_SB_pab_sip_sim_jan_2019_vali.csv'             # name of save file, location defined by "scenario"
+scenario = '01_hist_data//hist_'
 #scenario = '02_synth_data//synth_'
-scenario = '03_validation_data//vali_'
+#scenario = '03_validation_data//vali_'
 
 # ...Activation of simulation functions
-smartbalancing = False      # True: Smart Balancing is globally switched on
-fuzzy = False               # True: Smart Balancing is globally activated via Fuzzy Logic
+smartbalancing = True       # True: Smart Balancing is globally switched on
+fuzzy = True                # True: Smart Balancing is globally activated via Fuzzy Logic
 FRR_pricing = 0             # Global variable to switch both aFRR & mFRR from pay-as-bid (0) to marginal pricing (1)
 BEPP = 900                  # Balancing Energy Pricing Period (BEPP) in s - only applied for marginal pricing
                             # e.g. 900 (State of the art) or 60 or 4 (=> t_step!)
@@ -60,10 +60,10 @@ sb_delay = 0.0              # definition of delay of SB signal in s
 
 # ...Simulation time settings
 t_step = 60                             # simulation time step in s
-t_now = 0                               # start of simulation in s
-t_stop = (60 * 60) - t_step  # time, at which the simulation ends in s, one month
-k_now = 0                               # discrete time variable
-t_day = t_now                           # time of current day in s
+t_now = 0                            # start of simulation in s
+t_stop = (31 * 24 * 60 * 60) - t_step   # time, at which the simulation ends in s, one month
+k_now = 0                             # discrete time variable, k
+t_day = 0                               # time of current day in s
 t_isp = 15 * 60                         # duration of an Imbalance Settlement Period in s
 t_mol = 4 * 60 * 60                     # time in s, after which the MOLs gets updated
 day_count = 0                           # number of the day of the year
@@ -90,7 +90,7 @@ sim_steps = int(((t_stop + t_step) - t_now) / t_step)
 print('Simulating', sim_steps, 'time steps with a step size of', t_step, 's')
 
 # ...Set simulation time settings in timestamps utc
-sim_duration_utc = ['01.01.2019', '31.12.2019', '01.01.2020']
+sim_duration_utc = ['01.01.2019', '30.06.2019', '01.07.2019']
 
 # Measurement of simulation time
 start = 0.0
@@ -183,7 +183,7 @@ fileexch.get_gen_flex(scenario=scenario,
 fileexch.get_load_flex(scenario=scenario,
                        control_area=CA1)
 # MOL: read csv, if historic ACE
-if scenario == '01_hist_data//hist_' or '03_validation_data//vali_':
+if scenario == '01_hist_data//hist_': #or '03_validation_data//vali_':
     CA1.array_aFRR_molpos, CA1.array_aFRR_molneg = fileexch.read_afrr_mol(scenario, 0, 0, 0)
     CA1.array_mFRR_molpos, CA1.array_mFRR_molneg = fileexch.read_mfrr_mol(scenario, 0, 0, 0)
 
@@ -309,6 +309,9 @@ print('\n#-----------Simulation Start-----------#')
 print('#-----------Day %d-----------#' % day_count)
 
 start = time.time()
+#muss mit Anzahl an Tagen vor dem Starttag definiert werden wenn anderer Startzeitpunkt als 01.01.2019
+t_now = 0*24*60*60
+k_now = 0*24*60
 
 # ...Initialization of FCR and aFRR parameters
 SZ.fcr_init()
@@ -325,7 +328,6 @@ SZ.gen_schedule_calc()
 SZ.load_schedule_calc()
 SZ.imba_calc()
 SZ.f_calc()
-print(SZ.FCR_lambda)
 SZ.fcr_calc()
 SZ.afrr_calc(k_now=k_now, t_now=t_now, t_step=t_step, t_isp=t_isp, fuzzy=fuzzy,imbalance_clearing=imbalance_clearing,BEPP=BEPP)
 SZ.mfrr_calc(t_now=t_now, t_step=t_step, t_isp=t_isp)
@@ -340,7 +342,7 @@ print('#-----------Day %d-----------#' % day_count)
 # ...Simulation of every time step
 while t_now < t_stop:
 
-    start_date = datetime.strptime(sim_duration_utc[0], '%d.%m.%Y')
+    start_date = datetime.strptime('01.06.2019', '%d.%m.%Y')
     current_date = start_date + pd.Timedelta(days=day_count)
 
     month_count = current_date.month
@@ -352,7 +354,7 @@ while t_now < t_stop:
         t_day = 0.0
 
     #update MOL after t_mol in case of historic values, otherwise the synthetic MOL remains
-    if (t_now % t_mol) == 0 and scenario == '01_hist_data//hist_' or '03_validation_data//vali_':
+    if (t_now % t_mol) == 0 and scenario == '01_hist_data//hist_': #or '03_validation_data//vali_':
         print('Reached MOL update on day', day_count,'at', int((t_day / 3600)) ,'o´clock')
         (CA1.array_aFRR_molpos, CA1.array_aFRR_molneg) = fileexch.read_afrr_mol(scenario, t_day, t_mol, day_count)
         (CA1.array_mFRR_molpos, CA1.array_mFRR_molneg) = fileexch.read_mfrr_mol(scenario, t_day, t_mol, day_count)
@@ -411,19 +413,20 @@ if save_data:
                  'GER pos. mFRR costs [EUR]': CA1.array_mFRR_costs_pos_period,
                  'GER neg. mFRR costs [EUR]': CA1.array_mFRR_costs_neg_period,
                  'GER AEP [EUR/MWh]': CA1.array_AEP,
-                 #'Solar AEP costs [EUR]': CA1.array_balancinggroups[14].array_AEP_costs_period,
-                 #'Solar Marktprämie [EUR]': CA1.array_balancinggroups[14].array_gen_income_period,
-                 #'Wind offshore AEP costs [EUR]': CA1.array_balancinggroups[15].array_AEP_costs_period,
-                 #'Wind offshore Marktprämie [EUR]': CA1.array_balancinggroups[15].array_gen_income_period,
-                 #'Wind onshore AEP costs [EUR]': CA1.array_balancinggroups[16].array_AEP_costs_period,
-                 #'Wind onshore Marktprämie [EUR]': CA1.array_balancinggroups[16].array_gen_income_period,
-                 #'Aluminium AEP costs [EUR]': CA1.array_balancinggroups[17].array_AEP_costs_period,
-                 #'Steel AEP costs [EUR]': CA1.array_balancinggroups[18].array_AEP_costs_period,
-                 #'Cement AEP costs [EUR]': CA1.array_balancinggroups[19].array_AEP_costs_period,
-                 #'Paper AEP costs [EUR]': CA1.array_balancinggroups[20].array_AEP_costs_period,
-                 #'Chlorine AEP costs [EUR]': CA1.array_balancinggroups[21].array_AEP_costs_period,
-                 #'Gas AEP costs [EUR]': CA1.array_balancinggroups[3].array_AEP_costs_period
+                 'Solar AEP costs [EUR]': CA1.array_balancinggroups[14].array_AEP_costs_period,
+                 'Solar Marktprämie [EUR]': CA1.array_balancinggroups[14].array_gen_income_period,
+                 'Wind offshore AEP costs [EUR]': CA1.array_balancinggroups[15].array_AEP_costs_period,
+                 'Wind offshore Marktprämie [EUR]': CA1.array_balancinggroups[15].array_gen_income_period,
+                 'Wind onshore AEP costs [EUR]': CA1.array_balancinggroups[16].array_AEP_costs_period,
+                 'Wind onshore Marktprämie [EUR]': CA1.array_balancinggroups[16].array_gen_income_period,
+                 'Aluminium AEP costs [EUR]': CA1.array_balancinggroups[17].array_AEP_costs_period,
+                 'Steel AEP costs [EUR]': CA1.array_balancinggroups[18].array_AEP_costs_period,
+                 'Cement AEP costs [EUR]': CA1.array_balancinggroups[19].array_AEP_costs_period,
+                 'Paper AEP costs [EUR]': CA1.array_balancinggroups[20].array_AEP_costs_period,
+                 'Chlorine AEP costs [EUR]': CA1.array_balancinggroups[21].array_AEP_costs_period,
+                 'Gas AEP costs [EUR]': CA1.array_balancinggroups[3].array_AEP_costs_period
                 }
+
     fileexch.save_period_data(scenario=scenario,
                               save_file_name=savefilename_period,
                               save_dict=save_dict,
@@ -431,6 +434,7 @@ if save_data:
                               t_isp=t_isp,
                               t_stop=t_stop)
     print('Simulation results for every ISP were saved in file', savefilename_period)
+    
 
     save_dict = {'time [s]': t_vector,
                  'f [Hz]': SZ.array_f,
@@ -443,17 +447,26 @@ if save_data:
                  'insufficient pos. mFRR': CA1.array_mFRR_pos_insuf,
                  'insufficient neg. mFRR': CA1.array_mFRR_neg_insuf,
                  'AEP [EUR/MWh]': CA1.array_AEP,
-
-                 #'Solar Power [MW]': CA1.array_balancinggroups[14].array_sb_P,
-                 #'Wind offshore Power [MW]': CA1.array_balancinggroups[15].array_sb_P,
-                 #'Wind onshore Power [MW]': CA1.array_balancinggroups[16].array_sb_P,
-                 #'Aluminium Power [MW]': CA1.array_balancinggroups[17].array_sb_P,
-                 #'Steel Power [MW]': CA1.array_balancinggroups[18].array_sb_P,
-                 #'Cement Power [MW]': CA1.array_balancinggroups[19].array_sb_P,
-                 #'Paper Power [MW]': CA1.array_balancinggroups[20].array_sb_P,
-                 #'Chlorine Power [MW]': CA1.array_balancinggroups[21].array_sb_P,
-                 #'Gas Power [MW]': CA1.array_balancinggroups[3].array_sb_P
+                 'Solar Power [MW]': CA1.array_balancinggroups[14].array_sb_P,
+                 'Wind offshore Power [MW]': CA1.array_balancinggroups[15].array_sb_P,
+                 'Wind onshore Power [MW]': CA1.array_balancinggroups[16].array_sb_P,
+                 'Aluminium Power [MW]': CA1.array_balancinggroups[17].array_sb_P,
+                 'Steel Power [MW]': CA1.array_balancinggroups[18].array_sb_P,
+                 'Cement Power [MW]': CA1.array_balancinggroups[19].array_sb_P,
+                 'Paper Power [MW]': CA1.array_balancinggroups[20].array_sb_P,
+                 'Chlorine Power [MW]': CA1.array_balancinggroups[21].array_sb_P,
+                 'Gas Power [MW]': CA1.array_balancinggroups[3].array_sb_P
                 }
+
+    fileexch.save_t_step_data(scenario=scenario,
+                              save_file_name=savefilename_all,
+                              save_dict=save_dict,
+                              t_step=t_step,
+                              t_isp=t_isp,
+                              t_stop=t_stop)
+    print('Simulation results for all t_step were saved in file', savefilename_all)
+
+    '''
     plt.figure(1)
     plt.plot(t_vector, SZ.array_f)
     plt.title(SZ.name)
@@ -474,14 +487,13 @@ if save_data:
 
 
     plt.figure(3)
-    plt.plot(#t_vector, #CA1.array_FRCE,
+    plt.plot(t_vector, CA1.array_FRCE,
                 t_vector, CA1.array_FRCE_cl_pos,
                 t_vector, CA1.array_FRCE_cl_neg,
                 t_vector, CA1.array_aFRR_P_pos,
                 t_vector, CA1.array_aFRR_P_neg,
-                #t_vector, CA1.array_mFRR_P_pos,
-                #t_vector, CA1.array_mFRR_P_neg)
-    )
+                t_vector, CA1.array_mFRR_P_pos,
+                t_vector, CA1.array_mFRR_P_neg)
     plt.title(CA1.name)
     grapfunc.add_vert_lines(plt=plt, period=t_isp, t_stop=t_stop, color='gray', linestyle='dotted', linewidth=0.5)
     grapfunc.add_vert_lines(plt=plt, period=t_mol, t_stop=t_stop, color='black', linestyle='dashed', linewidth=0.5)
@@ -489,17 +501,11 @@ if save_data:
     plt.grid()
     plt.xlabel('time / s')
     plt.ylabel('Power / MW')
-    #plt.legend(['FRCE', 'aFRR_P_pos', 'aFRR_P_neg', 'mFRR_P_pos', 'mFRR_P_neg'])
-    plt.legend(['FRCE_cl_pos','FRCE_cl_neg','aFRR_P_pos', 'aFRR_P_neg'])
+    plt.legend(['FRCE', 'aFRR_P_pos', 'aFRR_P_neg', 'mFRR_P_pos', 'mFRR_P_neg']) 
     plt.show()
+    '''
 
-    fileexch.save_t_step_data(scenario=scenario,
-                              save_file_name=savefilename_all,
-                              save_dict=save_dict,
-                              t_step=t_step,
-                              t_isp=t_isp,
-                              t_stop=t_stop)
-    print('Simulation results for all t_step were saved in file', savefilename_all)
+
 else:
     print('\nAttention! The data was not saved due to settings!')
 

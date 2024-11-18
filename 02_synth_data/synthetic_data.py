@@ -54,4 +54,4 @@ else: #overwrite historic ACE with synthetic ACE (sACE)
     synth_Generation['FRCE Gen'] = sACE['ACE']
 
     #save new WC Generation file (without index) for simulation
-    synth_Generation['00:00 01.01.2019':'00:00 02.01.2019'].to_csv("02_synth_data/synth_Generation.csv",sep=";",decimal=".",index=False)
+    synth_Generation['00:00 01.01.2019':'00:00 01.01.2020'].to_csv("02_synth_data/synth_Generation.csv",sep=";",decimal=".",index=False)
