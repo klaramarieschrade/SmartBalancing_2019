@@ -40,7 +40,7 @@ import math
 # ---DEFINITION OF SIMULATION PARAMETERS----------------------------------------------
 # ------------------------------------------------------------------------------------
 
-savefilename_period = 'Sim_output_period_SB_pab_sip_sim_jan_2019_vali.csv'       # name of save file, location defined by "scenario"
+savefilename_period = 'Sim_output_period_SB_pab_sip_sim_jan_2019.csv'       # name of save file, location defined by "scenario"
 savefilename_all = 'Sim_output_all_SB_pab_sip_sim_jan_2019_vali.csv'             # name of save file, location defined by "scenario"
 scenario = '01_hist_data//hist_'
 #scenario = '02_synth_data//synth_'
@@ -442,20 +442,21 @@ if save_data:
                  'aFRR FRCE (open loop) [MW]': CA1.array_FRCE_ol,
                  'aFRR P [MW]': CA1.array_aFRR_P,
                  'mFRR P [MW]': CA1.array_mFRR_P,
+                 'smart balancing P in synchronouns zone/control area DE [MW]': SZ.array_sb_P,	
                  'insufficient pos. aFRR': CA1.array_aFRR_pos_insuf,
                  'insufficient neg. aFRR': CA1.array_aFRR_neg_insuf,
                  'insufficient pos. mFRR': CA1.array_mFRR_pos_insuf,
                  'insufficient neg. mFRR': CA1.array_mFRR_neg_insuf,
                  'AEP [EUR/MWh]': CA1.array_AEP,
-                 'Solar Power [MW]': CA1.array_balancinggroups[14].array_sb_P,
-                 'Wind offshore Power [MW]': CA1.array_balancinggroups[15].array_sb_P,
-                 'Wind onshore Power [MW]': CA1.array_balancinggroups[16].array_sb_P,
-                 'Aluminium Power [MW]': CA1.array_balancinggroups[17].array_sb_P,
-                 'Steel Power [MW]': CA1.array_balancinggroups[18].array_sb_P,
-                 'Cement Power [MW]': CA1.array_balancinggroups[19].array_sb_P,
-                 'Paper Power [MW]': CA1.array_balancinggroups[20].array_sb_P,
-                 'Chlorine Power [MW]': CA1.array_balancinggroups[21].array_sb_P,
-                 'Gas Power [MW]': CA1.array_balancinggroups[3].array_sb_P
+                 'bereitgestelltes Smart Balancing als Solar Power [MW]': CA1.array_balancinggroups[14].array_sb_P,
+                 'bereitgestelltes Smart Balancing als Wind offshore Power [MW]': CA1.array_balancinggroups[15].array_sb_P,
+                 'bereitgestelltes Smart Balancing als Wind onshore Power [MW]': CA1.array_balancinggroups[16].array_sb_P,
+                 'bereitgestelltes Smart Balancing als Aluminium Power [MW]': CA1.array_balancinggroups[17].array_sb_P,
+                 'bereitgestelltes Smart Balancing als Steel Power [MW]': CA1.array_balancinggroups[18].array_sb_P,
+                 'bereitgestelltes Smart Balancing als Cement Power [MW]': CA1.array_balancinggroups[19].array_sb_P,
+                 'bereitgestelltes Smart Balancing als Paper Power [MW]': CA1.array_balancinggroups[20].array_sb_P,
+                 'bereitgestelltes Smart Balancing als Chlorine Power [MW]': CA1.array_balancinggroups[21].array_sb_P,
+                 'bereitgestelltes Smart Balancing als Gas Power [MW]': CA1.array_balancinggroups[3].array_sb_P
                 }
 
     fileexch.save_t_step_data(scenario=scenario,
