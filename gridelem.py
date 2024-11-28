@@ -257,7 +257,6 @@ class CalculatingGridElement(GridElement):
                  gen_P,             # generator power in MW                         (float)
                  load_P,            # load in MW                                    (float)
                  FCR_lambda,        # FCR parameter 'lambda' in MW/Hz               (float)
-                 FCR_delay,         # delay time for the activation of FCR in s     (float)
                  aFRR_Kr,           # aFRR constant 'Kr' in MW/Hz                   (float)
                  aFRR_T,            # aFRR time constant 'T' in s                   (float)
                  aFRR_beta,         # aFRR constant 'beta' in p.u.                  (float)
@@ -273,16 +272,6 @@ class CalculatingGridElement(GridElement):
 
         # FCR constants
         self.FCR_lambda = FCR_lambda
-        self.FCR_delay = FCR_delay
-        
-        #FCR variables
-        self.FCR_P_ref = 0.0
-
-        self.array_FCR_P_ref = []
-
-        # Array acting as delay of FCR activation
-        self.FCR_queue_len = 0
-        self.FCR_queue = []
 
         # FRCE signal
         self.FRCE = 0.0
@@ -363,20 +352,11 @@ class CalculatingGridElement(GridElement):
 
     def fcr_init(self, t_step):
         pass
-        #self.FCR_queue_len = math.ceil(self.FCR_delay / t_step)
-        #i = 0
-        #while i < self.FCR_queue_len:
-            #self.FCR_queue.append(self.FCR_P_ref)
-            #i += 1
 
     # Method calculating the activated FCR power
     # as function of a frequency deviation and 'FCR_lambda'.
     def fcr_calc(self, f_delta):
-        #self.FCR_P_ref = -(self.FCR_lambda * f_delta)
         self.FCR_P = -(self.FCR_lambda * f_delta)
-        #Dynamik FCR noch nicht korrekt
-        #self.FCR_queue.append(self.FCR_P_ref)
-        #self.FCR_P = self.FCR_queue.pop(0)
 
     # Method initializing an array acting as the time delay for the activation of aFRR
     # The array has one element for each time step, that the signal is delayed.
@@ -401,15 +381,15 @@ class CalculatingGridElement(GridElement):
     
     #Diskretisierung des PI-Reglers unter Verwendung der Trapezregel, skalierierung mit 1/t_step unnötig
         self.aFRR_ref_pos = self.aFRR_ref_pos + (
-            (self.aFRR_beta + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos + 
-            (-self.aFRR_beta + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos_before
+            (self.aFRR_beta/t_step + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos + 
+            (-self.aFRR_beta/t_step + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos_before
         )
         self.aFRR_pos_queue.append(self.aFRR_ref_pos)
         self.aFRR_P_pos = self.aFRR_pos_queue.pop(0)
 
         self.aFRR_ref_neg = self.aFRR_ref_neg + (
-            (self.aFRR_beta + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_neg + 
-            (-self.aFRR_beta + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_neg_before
+            (self.aFRR_beta/t_step + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_neg + 
+            (-self.aFRR_beta/t_step + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_neg_before
         )
         self.aFRR_neg_queue.append(self.aFRR_ref_neg)
         self.aFRR_P_neg = self.aFRR_neg_queue.pop(0)
@@ -450,7 +430,6 @@ class CalculatingGridElement(GridElement):
         self.array_imba_P_ph.append(self.imba_P_ph)
         self.array_imba_P_sc.append(self.imba_P_sc)
         self.array_FCR_P.append(self.FCR_P)
-        self.array_FCR_P_ref.append(self.FCR_P_ref)
         self.array_FRCE.append(self.FRCE)
         self.array_FRCE_ol.append(self.FRCE_ol)
         self.array_FRCE_ol_pos.append(self.FRCE_ol_pos)
@@ -513,8 +492,8 @@ class SynchronousZone(GridElement):
     # and the FCR constant 'FCR_lambda'.
     def f_calc(self, t_step):
         self.delta_P_before = self.delta_P
-        self.delta_P = - self.imba_P_sc - self.FCR_P - self.aFRR_P - self.mFRR_P
-        self.f = 50/(300000*12) * t_step/2 * (self.delta_P_before - self.delta_P) 
+        self.delta_P =  +self.imba_P_sc - self.FCR_P - self.aFRR_P - self.mFRR_P
+        self.f = self.f + 50/(300000*12) * (t_step/2) * (self.delta_P_before + self.delta_P) 
         self.f_delta = self.f_nom - self.f
 
     # Method calculating the activated FCR power of the system.
@@ -524,6 +503,10 @@ class SynchronousZone(GridElement):
         for i in self.array_subordinates:
             i.fcr_calc(f_delta=self.f_delta)
             self.FCR_P += i.FCR_P
+            if self.FCR_P > 3000:
+                self.FCR_P = 3000
+            elif self.FCR_P < -3000:
+                self.FCR_P = -3000
 
     # Method calculating the activated aFRR power of the system
     # The method sums up the activated aFRR power of all subordinated grid elements
@@ -598,7 +581,6 @@ class ControlArea(CalculatingGridElement):
     # The FCR and aFRR constants correspond the UCTE grid code.
     def __init__(self,
                  name,                  # name of the grid element                                          (string)
-                 FCR_delay,             # delay time for the activation of FCR in s                         (float)
                  FCR_lambda,            # FCR parameter 'lambda' in MW/Hz                                   (float)
                  aFRR_Kr,               # aFRR constant 'Kr' in MW/Hz                                       (float)
                  aFRR_T,                # aFRR time constant 'T' in s                                       (float)
@@ -621,7 +603,6 @@ class ControlArea(CalculatingGridElement):
                                         gen_P=0.0,
                                         load_P=0.0,
                                         FCR_lambda=FCR_lambda,
-                                        FCR_delay=FCR_delay,
                                         aFRR_Kr=aFRR_Kr,
                                         aFRR_T=aFRR_T,
                                         aFRR_beta=aFRR_beta,
@@ -809,15 +790,6 @@ class ControlArea(CalculatingGridElement):
         self.gen_P_schedule = self.gen_P
         self.load_P_schedule = self.load_P
 
-    # Method initializing an array acting as the time delay for the activation of FCR
-    # The array has one element for each time step, that the signal is delayed.
-    # All element of the array are set to zero.
-    def fcr_init(self, t_step):
-        self.FCR_queue_len = math.ceil(self.FCR_delay / t_step)
-        i = 0
-        while i < self.FCR_queue_len:
-            self.FCR_queue.append(self.FCR_ref)
-            i += 1
 
     # Method initializing an array acting as the time delay for the activation of aFRR
     # The array has one element for each time step, that the signal is delayed.
@@ -850,8 +822,8 @@ class ControlArea(CalculatingGridElement):
             i.imba_calc() #speichert Ungleichgewichte imba_P_ph und imba_P_sc der jeweiligen Balancing Group ab
         self.imba_P_ph = self.gen_P - self.load_P + self.aFRR_P + self.mFRR_P + self.sb_P #imba_P_ph: imbalance in physical power
         self.imba_P_sc = self.gen_P - self.gen_P_schedule - self.load_P + self.load_P_schedule + self.sb_P #imba_P_sc: imbalance in scheduled power
-        self.FRCE = - self.imba_P_sc #Vorzeichen muss geänderte werden damit mit Annahme von RKN passt: KW-Ausfall bedeutet positive Störung
-        self.FRCE_ol = - self.imba_P_sc - self.mFRR_P #- self.FCR_P #Vorzeichen muss geändert werden, FRCE_ol: open loop FRCE signal
+        self.FRCE = -self.imba_P_sc 
+        self.FRCE_ol = -self.imba_P_sc + self.mFRR_P #- self.FCR_P #Vorzeichen muss geändert werden, FRCE_ol: open loop FRCE signal
 
         if self.FRCE_ol > 0:
             self.FRCE_ol_pos = self.FRCE_ol
@@ -898,12 +870,8 @@ class ControlArea(CalculatingGridElement):
     # Method calculating the activated FCR power
     # as function of a frequency deviation and 'FCR_lambda'.
     def fcr_calc(self, f_delta):
-        #self.FCR_P_ref = -(self.FCR_lambda * f_delta)
-        self.FCR_P = -(self.FCR_lambda * f_delta)
-        #Dynamik FCR noch nicht korrekt
-        #self.FCR_queue.append(self.FCR_P_ref)
-        #self.FCR_P = self.FCR_queue.pop(0)
-
+        self.FCR_P =  (self.FCR_lambda * f_delta) 
+    
     # Method calculating the activated aFRR power of the system.
     # Added call of method afrr_price_calc for this class.
     # Added activation of smart balancing in subordinated Balancing Groups
@@ -915,15 +883,15 @@ class ControlArea(CalculatingGridElement):
         self.FRCE_cl_neg = self.FRCE_ol_neg - self.aFRR_P_neg
         #PI-Regler für aFRR
         self.aFRR_ref_pos = self.aFRR_ref_pos + (
-            (self.aFRR_beta + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos + 
-            (-self.aFRR_beta + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos_before
+            (self.aFRR_beta/t_step + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos + 
+            (-self.aFRR_beta/t_step + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos_before
         )
         self.aFRR_pos_queue.append(self.aFRR_ref_pos)
         self.aFRR_P_pos = self.aFRR_pos_queue.pop(0)
 
         self.aFRR_ref_neg = self.aFRR_ref_neg + (
-            (self.aFRR_beta + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_neg + 
-            (-self.aFRR_beta + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_neg_before
+            (self.aFRR_beta/t_step + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_neg + 
+            (-self.aFRR_beta/t_step + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_neg_before
         )
         self.aFRR_neg_queue.append(self.aFRR_ref_neg)
         self.aFRR_P_neg = self.aFRR_neg_queue.pop(0)
@@ -988,6 +956,13 @@ class ControlArea(CalculatingGridElement):
                       con_FRR_pos = self.con_FRR_pos,
                       con_FRR_neg = self.con_FRR_neg)
             self.sb_P += i.sb_P
+
+            # Calculation of the AEP
+        self.aep_calc(t_now=t_now,
+                      t_step=t_step,
+                      t_isp=t_isp,
+                      da_price=self.da_price,
+                      FRCE = self.FRCE)
 
     # Method calculating a price for aFRR using the pay-as-bid priciple
     def afrr_price_calc_pab(self, t_now, t_step):
@@ -1357,11 +1332,11 @@ class ControlArea(CalculatingGridElement):
                              t_isp=t_isp)
 
         # Calculation of the AEP
-        self.aep_calc(t_now=t_now,
-                      t_step=t_step,
-                      t_isp=t_isp,
-                      da_price=self.da_price,
-                      FRCE = self.FRCE)
+        # self.aep_calc(t_now=t_now,
+        #               t_step=t_step,
+        #               t_isp=t_isp,
+        #               da_price=self.da_price,
+        #               FRCE = self.FRCE)
 
     # Method calculating the mFRR prices using the pay-as-bid priciple
     # Only called at the beginning of an ISP, since mFRR is static for each ISP
@@ -1708,7 +1683,7 @@ class ControlArea(CalculatingGridElement):
                 self.AEP = 0.0
             else:
                 self.AEP = FRR_costs / FRR_energy
-        '''
+        
         # Calculation of AEP2
         # Limitation of the AEP to the highest absolute value in all activated aFRR and mFRR prices during an ISP
         if abs(self.aFRR_price_pos_max) > abs(self.aFRR_price_neg_max):
@@ -1756,7 +1731,7 @@ class ControlArea(CalculatingGridElement):
             pass
 
         # Calculation of AEP3 "Börsenpreiskopplung" is not considered, but
-        # Calculation of AEP4 "bonus" is taken into account
+        # Calculation of AEP4 "bonus" is taken into account (bei traffic light approach)
         if (0.8 * self.con_FRR_pos) < (FRR_energy*4):
             if self.AEP < 100:
                 self.AEP += 100
@@ -1770,7 +1745,7 @@ class ControlArea(CalculatingGridElement):
                 self.AEP = self.AEP-(0.5*abs(self.AEP))
         else:
             pass
-        '''
+       
 
     # Method processing the FRCE_cl of the Control Area to create a control signal (FRCE_sb) for Smart Balancing
     def sb_signal(self):
@@ -1864,7 +1839,6 @@ class ControlArea(CalculatingGridElement):
         self.array_imba_P_ph.append(self.imba_P_ph)
         self.array_imba_P_sc.append(self.imba_P_sc)
         self.array_FCR_P.append(self.FCR_P)
-        self.array_FCR_P_ref.append(self.FCR_P_ref)
         self.array_FRCE.append(self.FRCE)
         self.array_FRCE_ol.append(self.FRCE_ol)
         self.array_FRCE_ol_pos.append(self.FRCE_ol_pos)

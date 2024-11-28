@@ -42,9 +42,9 @@ import math
 
 savefilename_period = 'Sim_output_period.csv'       # name of save file, location defined by "scenario"
 savefilename_all = 'Sim_output_all.csv'             # name of save file, location defined by "scenario"
-#scenario = '01_hist_data//hist_'
+scenario = '01_hist_data//hist_'
 #scenario = '02_synth_data//synth_'
-scenario = '03_validation_data//vali_'
+#scenario = '03_validation_data//vali_'
 
 # ...Activation of simulation functions
 smartbalancing = False      # True: Smart Balancing is globally switched on
@@ -59,9 +59,9 @@ show_fig = False            # True: show all figures at the end of the simulatio
 sb_delay = 0.0              # definition of delay of SB signal in s
 
 # ...Simulation time settings
-t_step = 60                             # simulation time step in s
+t_step = 1                            # simulation time step in s
 t_now = 0                               # start of simulation in s
-t_stop = (60 * 60) - t_step  # time, at which the simulation ends in s, one month
+t_stop = ( 60 * 60)                      # time, at which the simulation ends in s, one month
 k_now = 0                               # discrete time variable
 t_day = t_now                           # time of current day in s
 t_isp = 15 * 60                         # duration of an Imbalance Settlement Period in s
@@ -71,12 +71,12 @@ month_count = 0                         # number of the month of the year
 day_in_month = 0                        # day of the month
 
 # ...Vectors for the simulation time variables
-t_vector = []
+t_vector = [0]
 k_vector = []
 
 # ...Checking divisibility of time constants
-if (86400 % t_step) != 0: # 86400 s = 24 h
-    sys.exit('ERROR! 86400 must be divisible by t_step!')
+if (86400.0 % t_step) != 0: # 86400 s = 24 h
+    print('ERROR! 86400 must be divisible by t_step!')#sys.exit('ERROR! 86400 must be divisible by t_step!')
 elif (t_isp % t_step) != 0:
     sys.exit('ERROR! t_isp must be divisible by t_step!')
 elif (t_mol % t_step) != 0:
@@ -133,7 +133,6 @@ CA0 = gridelem.CalculatingGridElement(name='Rest des UCTE Netzes',
                                       gen_P=300000.0,
                                       load_P=300000.0,
                                       FCR_lambda=13500.0,
-                                      FCR_delay=0.0,
                                       aFRR_Kr=14000.0,
                                       aFRR_T=170.0,
                                       aFRR_beta=0.1,
@@ -141,7 +140,6 @@ CA0 = gridelem.CalculatingGridElement(name='Rest des UCTE Netzes',
 SZ.array_subordinates.append(CA0)
 
 CA1 = gridelem.ControlArea(name='Deutschland',
-                           FCR_delay=0.0,
                            FCR_lambda=1500.0,
                            aFRR_Kr=1550.0,
                            aFRR_T=250.0,
@@ -162,7 +160,7 @@ CA1.array_da_prices = array_da_prices
 
 # ...Initialization of Balancing Groups
 # read balance Groups from csv and add to Control area
-array_bilanzkreise = fileexch.get_balancing_groups(scenario, smartbalancing, sim_steps)
+array_bilanzkreise = fileexch.get_balancing_groups(scenario, smartbalancing, sim_steps, t_step)
 
 for i in range(len(array_bilanzkreise)):
     CA1.array_balancinggroups.append(array_bilanzkreise[i])
@@ -185,7 +183,7 @@ fileexch.get_gen_flex(scenario=scenario,
 fileexch.get_load_flex(scenario=scenario,
                        control_area=CA1)
 # MOL: read csv, if historic ACE
-if scenario == '01_hist_data//hist_' or '03_validation_data//vali_':
+if scenario == '01_hist_data//hist_':# or '03_validation_data//vali_':
     CA1.array_aFRR_molpos, CA1.array_aFRR_molneg = fileexch.read_afrr_mol(scenario, 0, 0, 0)
     CA1.array_mFRR_molpos, CA1.array_mFRR_molneg = fileexch.read_mfrr_mol(scenario, 0, 0, 0)
 
@@ -312,25 +310,30 @@ print('#-----------Day %d-----------#' % day_count)
 
 start = time.time()
 
+
 # ...Initialization of FCR and aFRR parameters
 SZ.fcr_init(t_step=t_step)
 SZ.afrr_init(t_step=t_step)
+
+#save initial values
+SZ.write_results()
 
 t_vector.append(t_now)
 k_vector.append(k_now)
 
 SZ.readarray(k_now) # read arrays with time series consumption, consumption scheduled, generation, generation scheduled, gets values for t_now/k_now
+SZ.fcr_calc()
 SZ.gen_calc()
 SZ.load_calc()
 SZ.schedule_init()
 SZ.gen_schedule_calc()
 SZ.load_schedule_calc()
 SZ.imba_calc()
-SZ.f_calc(t_step=t_step)
-SZ.fcr_calc()
 SZ.afrr_calc(k_now=k_now, t_now=t_now, t_step=t_step, t_isp=t_isp, fuzzy=fuzzy,imbalance_clearing=imbalance_clearing,BEPP=BEPP)
-SZ.mfrr_calc(t_now=t_now, t_step=t_step, t_isp=t_isp)
+#SZ.mfrr_calc(t_now=t_now, t_step=t_step, t_isp=t_isp)
+SZ.f_calc(t_step=t_step)
 SZ.energy_costs_calc(k_now=k_now, t_now=t_now, t_step=t_step, t_isp=t_isp)
+
 SZ.write_results()
 SZ.mol_update()
 
@@ -353,7 +356,7 @@ while t_now < t_stop:
         t_day = 0.0
 
     #update MOL after t_mol in case of historic values, otherwise the synthetic MOL remains
-    if (t_now % t_mol) == 0 and scenario == '01_hist_data//hist_' or '03_validation_data//vali_':
+    if (t_now % t_mol) == 0 and scenario == '01_hist_data//hist_':# or '03_validation_data//vali_':
         print('Reached MOL update on day', day_count,'at', int((t_day / 3600)) ,'o´clock')
         (CA1.array_aFRR_molpos, CA1.array_aFRR_molneg) = fileexch.read_afrr_mol(scenario, t_day, t_mol, day_count)
         (CA1.array_mFRR_molpos, CA1.array_mFRR_molneg) = fileexch.read_mfrr_mol(scenario, t_day, t_mol, day_count)
@@ -367,13 +370,13 @@ while t_now < t_stop:
     t_now += t_step
     t_day += t_step
     t_vector.append(t_now)
-    k_now += 1
-    k_vector.append(k_now)
+    if (t_now) % 60 == 0:
+        k_now += 1
+        k_vector.append(k_now)
 
     #todo inserte explanaition of simulaiton order
 
-# 1.read arrays with time series consumption, generation
-
+# 1.read arrays with time series consumption, generation  
     SZ.readarray(k_now)
 # 2. calculate generation, load, schedules and resulting imbalance
     SZ.gen_calc()
@@ -382,13 +385,14 @@ while t_now < t_stop:
     SZ.load_schedule_calc()
     SZ.imba_calc()
 # 3. calculate frequency deviation and FCR
-    SZ.f_calc(t_step=t_step)
+    #SZ.f_calc(t_step=t_step)
     SZ.fcr_calc()
 # 4. calculate FRR and resulting cost / prices. Smart Balancing is calculated in afrr_calc
     SZ.afrr_calc(k_now=k_now, t_now=t_now, t_step=t_step, t_isp=t_isp, fuzzy=fuzzy,imbalance_clearing=imbalance_clearing,BEPP=BEPP)
     #note: AEP for next iteration is calculated in mfrr_calc.
-    SZ.mfrr_calc(t_now=t_now, t_step=t_step, t_isp=t_isp)
+    #SZ.mfrr_calc(t_now=t_now, t_step=t_step, t_isp=t_isp)
     SZ.energy_costs_calc(k_now=k_now, t_now=t_now, t_step=t_step, t_isp=t_isp)
+    SZ.f_calc(t_step=t_step)
 # 5. write results
     SZ.write_results()
 
@@ -441,21 +445,21 @@ if save_data:
                  'FCR P [MW]': CA1.array_FCR_P,
                  'aFRR P [MW]': CA1.array_aFRR_P,
                  'mFRR P [MW]': CA1.array_mFRR_P,
+                 'SB P [MW]': CA1.array_sb_P,
                  'insufficient pos. aFRR': CA1.array_aFRR_pos_insuf,
                  'insufficient neg. aFRR': CA1.array_aFRR_neg_insuf,
                  'insufficient pos. mFRR': CA1.array_mFRR_pos_insuf,
                  'insufficient neg. mFRR': CA1.array_mFRR_neg_insuf,
                  'AEP [EUR/MWh]': CA1.array_AEP,
-
-                 #'Solar Power [MW]': CA1.array_balancinggroups[14].array_sb_P,
-                 #'Wind offshore Power [MW]': CA1.array_balancinggroups[15].array_sb_P,
-                 #'Wind onshore Power [MW]': CA1.array_balancinggroups[16].array_sb_P,
-                 #'Aluminium Power [MW]': CA1.array_balancinggroups[17].array_sb_P,
-                 #'Steel Power [MW]': CA1.array_balancinggroups[18].array_sb_P,
-                 #'Cement Power [MW]': CA1.array_balancinggroups[19].array_sb_P,
-                 #'Paper Power [MW]': CA1.array_balancinggroups[20].array_sb_P,
-                 #'Chlorine Power [MW]': CA1.array_balancinggroups[21].array_sb_P,
-                 #'Gas Power [MW]': CA1.array_balancinggroups[3].array_sb_P
+                 'Solar Power [MW]': CA1.array_balancinggroups[14].array_sb_P,
+                 'Wind offshore Power [MW]': CA1.array_balancinggroups[15].array_sb_P,
+                 'Wind onshore Power [MW]': CA1.array_balancinggroups[16].array_sb_P,
+                 'Aluminium Power [MW]': CA1.array_balancinggroups[17].array_sb_P,
+                 'Steel Power [MW]': CA1.array_balancinggroups[18].array_sb_P,
+                 'Cement Power [MW]': CA1.array_balancinggroups[19].array_sb_P,
+                 'Paper Power [MW]': CA1.array_balancinggroups[20].array_sb_P,
+                 'Chlorine Power [MW]': CA1.array_balancinggroups[21].array_sb_P,
+                 'Gas Power [MW]': CA1.array_balancinggroups[3].array_sb_P
                 }
     
     fileexch.save_t_step_data(scenario=scenario,
@@ -465,11 +469,13 @@ if save_data:
                               t_isp=t_isp,
                               t_stop=t_stop)
 
+    print('Simulation results for all t_step were saved in file', savefilename_all)
+
     plt.figure(1)
     plt.plot(t_vector, SZ.array_f)
     plt.title(SZ.name)
     plt.grid()
-    plt.ylim(49.8, 50.2)
+    #plt.ylim(49.8, 50.2)
     plt.xlabel('time / s')
     plt.ylabel('Frequency / Hz')
     
@@ -487,27 +493,26 @@ if save_data:
     plt.figure(3)
     plt.plot(#t_vector, #CA1.array_FRCE,
                 t_vector, CA1.array_FCR_P,
-                t_vector, CA1.array_aFRR_P)
+                t_vector, CA1.array_aFRR_P,
+                t_vector, CA1.array_sb_P
+                )
                 #t_vector, CA1.array_FRCE_cl_pos,
                 #t_vector, CA1.array_FRCE_cl_neg,
                 #t_vector, CA1.array_aFRR_P_pos,
                 #t_vector, CA1.array_aFRR_P_neg,
                 #t_vector, CA1.array_mFRR_P_pos,
                 #t_vector, CA1.array_mFRR_P_neg)
-    
     plt.title(CA1.name)
     grapfunc.add_vert_lines(plt=plt, period=t_isp, t_stop=t_stop, color='gray', linestyle='dotted', linewidth=0.5)
     grapfunc.add_vert_lines(plt=plt, period=t_mol, t_stop=t_stop, color='black', linestyle='dashed', linewidth=0.5)
-    plt.title('FRR activation')
+    plt.title('LFC activation')
     plt.grid()
     plt.xlabel('time / s')
     plt.ylabel('Power / MW')
     #plt.legend(['FRCE', 'aFRR_P_pos', 'aFRR_P_neg', 'mFRR_P_pos', 'mFRR_P_neg'])
-    plt.legend(['P_FCR', 'aFRR_P_neg'])
+    plt.legend(['P_FCR', 'P_aFRR', 'SB_P'])
+   
     plt.show()
-
-    
-    print('Simulation results for all t_step were saved in file', savefilename_all)
 else:
     print('\nAttention! The data was not saved due to settings!')
 

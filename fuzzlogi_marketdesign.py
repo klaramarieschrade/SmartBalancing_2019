@@ -16,7 +16,7 @@ ratio = ctrl.Antecedent(np.arange(0,600,1),'ratio_percent')
 
 smartbalancing = ctrl.Consequent(np.arange(0, 101, 1), 'smartbalancing_percent')
 
-# Auto-membership function population is possible with .automf(3, 5, or 7)
+# Auto-membership function population is possible with .automf(3, 5, or 7) nimmt Werte standardmäßig an
 netmargin.automf(5)
 smartbalancing.automf(5)
 #d_Imba.automf(5)
@@ -73,14 +73,16 @@ FRR_ratio['over120'] = fuzz.trimf(FRR_ratio.universe, [110,130, 170])
 FRR_ratio['over150'] = fuzz.trimf(FRR_ratio.universe, [130,170, 181])
 
 # You can see how these look with .view()
-#time.view()
-#plt.figure(1)
-#imbalance.view()
-#plt.figure(2)
-#netmargin.view()
-#plt.figure(3)
-#smartbalancing.view()
-#plt.figure(4)
+# time.view()
+# plt.figure(1)
+# imbalance.view()
+# plt.figure(2)
+# netmargin.view()
+# plt.figure(3)
+# smartbalancing.view()
+# plt.figure(4)
+# p_average.view()
+# plt.figure(5)
 
 
 # to make these triangles useful, we define the fuzzy relationship between input and output variables.
@@ -290,4 +292,4 @@ def fuzz(Marge, FRCE_sb, old_FRCE_sb, old_d_Imba, d_Imba, Time, p_average, clear
 
             return (sb_6TL.output['smartbalancing_percent'] / (100))
 
-#plt.show()
+plt.show()

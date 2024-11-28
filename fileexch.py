@@ -54,7 +54,6 @@ def fill_schedule(scenario, balancing_groups, sim_duration):
                 break
             else:
                 count += 1
-                # print(balancing_groups[i].name, row)
                 balancing_groups[i].array_load_P_schedule.append(float(row[balancing_groups[i].name]))
         # reset File pointer and skip Header row
         csv_load_schedule.seek(0)
