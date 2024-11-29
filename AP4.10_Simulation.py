@@ -40,8 +40,8 @@ import math
 # ---DEFINITION OF SIMULATION PARAMETERS----------------------------------------------
 # ------------------------------------------------------------------------------------
 
-savefilename_period = 'Sim_output_period_SB_pab_sip_sim_jan_2019.csv'       # name of save file, location defined by "scenario"
-savefilename_all = 'Sim_output_all_SB_pab_sip_sim_jan_2019_vali.csv'             # name of save file, location defined by "scenario"
+savefilename_period = 'Sim_output_period_noFCR_f_calc_orig.csv'       # name of save file, location defined by "scenario"
+savefilename_all = 'Sim_output_all_noFCR_f_calc_orig.csv'             # name of save file, location defined by "scenario"
 scenario = '01_hist_data//hist_'
 #scenario = '02_synth_data//synth_'
 #scenario = '03_validation_data//vali_'
@@ -59,9 +59,9 @@ show_fig = False            # True: show all figures at the end of the simulatio
 sb_delay = 0.0              # definition of delay of SB signal in s
 
 # ...Simulation time settings
-t_step = 60                             # simulation time step in s
+t_step = 1                             # simulation time step in s
 t_now = 0                            # start of simulation in s
-t_stop = (31 * 24 * 60 * 60) - t_step   # time, at which the simulation ends in s, one month
+t_stop = ( 60 * 60)   # time, at which the simulation ends in s, one month
 k_now = 0                             # discrete time variable, k
 t_day = 0                               # time of current day in s
 t_isp = 15 * 60                         # duration of an Imbalance Settlement Period in s
@@ -467,7 +467,7 @@ if save_data:
                               t_stop=t_stop)
     print('Simulation results for all t_step were saved in file', savefilename_all)
 
-    '''
+    
     plt.figure(1)
     plt.plot(t_vector, SZ.array_f)
     plt.title(SZ.name)
@@ -504,7 +504,7 @@ if save_data:
     plt.ylabel('Power / MW')
     plt.legend(['FRCE', 'aFRR_P_pos', 'aFRR_P_neg', 'mFRR_P_pos', 'mFRR_P_neg']) 
     plt.show()
-    '''
+    
 
 
 else:
