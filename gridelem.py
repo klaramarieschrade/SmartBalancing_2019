@@ -823,7 +823,7 @@ class ControlArea(CalculatingGridElement):
         self.imba_P_ph = self.gen_P - self.load_P + self.aFRR_P + self.mFRR_P + self.sb_P #imba_P_ph: imbalance in physical power
         self.imba_P_sc = self.gen_P - self.gen_P_schedule - self.load_P + self.load_P_schedule + self.sb_P #imba_P_sc: imbalance in scheduled power
         self.FRCE = -self.imba_P_sc 
-        self.FRCE_ol = -self.imba_P_sc + self.mFRR_P #- self.FCR_P #Vorzeichen muss geändert werden, FRCE_ol: open loop FRCE signal
+        self.FRCE_ol = -self.imba_P_sc + self.mFRR_P + self.FCR_P #- self.FCR_P #Vorzeichen muss geändert werden, FRCE_ol: open loop FRCE signal
 
         if self.FRCE_ol > 0:
             self.FRCE_ol_pos = self.FRCE_ol
@@ -1670,6 +1670,7 @@ class ControlArea(CalculatingGridElement):
     
     def aep_calc(self, t_now, t_step, t_isp, da_price, FRCE):
         # Calculation of AEP1
+        FRR_energy = self.aFRR_E_pos_period + self.aFRR_E_neg_period + self.mFRR_E_pos_period + self.mFRR_E_neg_period
         if self.aFRR_E_pos == 0 and self.aFRR_E_neg == 0 and self.mFRR_E_pos == 0 and self.mFRR_E_neg == 0:
             self.AEP = 0.0
         elif self.aFRR_E_pos + self.aFRR_E_neg + self.mFRR_E_pos + self.mFRR_E_neg == 0:

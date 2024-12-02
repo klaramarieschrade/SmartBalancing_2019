@@ -24,13 +24,13 @@ def fill_schedule(scenario, balancing_groups, sim_duration):
 
     count = 0
     # ------getting the power schedule------- #
-    gen_schedule = scenario + 'Generation_schedule.csv'
+    gen_schedule = '01_hist_data//vali_'+ 'Generation_schedule.csv' 
     csv_gen_schedule = open(gen_schedule, mode='r')
     file_gen = csv.DictReader(csv_gen_schedule, delimiter=';')
 
     for i in range(len(balancing_groups)):
         for row in file_gen:
-            if count == sim_duration:
+            if count == sim_duration/60:
                 count = 0
                 break
             else:
@@ -42,14 +42,14 @@ def fill_schedule(scenario, balancing_groups, sim_duration):
 
 
     # ------getting the load schedule------- #
-    load_schedule = scenario + 'Consumption_schedule.csv'
+    load_schedule = '01_hist_data//vali_'+ 'Consumption_schedule.csv' #scenario + 'Consumption_schedule.csv'
     csv_load_schedule = open(load_schedule, mode='r')
     file_load = csv.DictReader(csv_load_schedule, delimiter=';')
     count = 0
 
     for i in range(len(balancing_groups)):
         for row in file_load:
-            if count == sim_duration:
+            if count == sim_duration/60:
                 count = 0
                 break
             else:
@@ -65,7 +65,7 @@ def fill_schedule(scenario, balancing_groups, sim_duration):
 # a CSV with all power and load will be automatically read and the objects created and appended to their belonging BG
 def fill_power_load(scenario, balancing_groups, sim_duration):
     # ------getting the power values------- #
-    kw_gen_file = scenario + 'Generation.csv'
+    kw_gen_file = '01_hist_data//vali_'+ 'Generation.csv'#scenario + 'Generation.csv'
     csv_file1 = open(kw_gen_file, mode='r')
     file1 = csv.DictReader(csv_file1, delimiter=';') #reader object
     i = 0
@@ -76,7 +76,7 @@ def fill_power_load(scenario, balancing_groups, sim_duration):
         # search through the power plant array
         for j in range(len(balancing_groups[i].array_generators)): #search through generators of the BG, number can be found in file
             for row1 in file1:
-                if count == sim_duration:
+                if count == sim_duration/60:
                     count = 0
                     break
                 else:
@@ -88,7 +88,7 @@ def fill_power_load(scenario, balancing_groups, sim_duration):
             csv_file1.__next__()
 
     # ------getting the load values------- #
-    kw_load_file = scenario + 'Consumption.csv'
+    kw_load_file = '01_hist_data//vali_'+ 'Consumption.csv'#scenario + 'Consumption.csv'
     csv_file2 = open(kw_load_file, mode='r')
     file2 = csv.DictReader(csv_file2, delimiter=';')
     # search through the BG array
@@ -96,7 +96,7 @@ def fill_power_load(scenario, balancing_groups, sim_duration):
         # search through the load array
         for j in range(len(balancing_groups[i].array_loads)):
             for row2 in file2:
-                if count == sim_duration:
+                if count == sim_duration/60:
                     count = 0
                     break
                 else:
@@ -114,7 +114,7 @@ def fill_power_load(scenario, balancing_groups, sim_duration):
 def get_balancing_groups(scenario, sb_ON, sim_duration):
 
     obj_balancing_groups = []    # Array with BalancingGroup Objects
-    bg_file = scenario + 'Balancing_groups.csv'
+    bg_file ='01_hist_data//vali_' + 'Balancing_groups.csv' #scenario + 'Balancing_groups.csv'
 
     # open CSV
     csv_bgs = open(bg_file, mode='r')

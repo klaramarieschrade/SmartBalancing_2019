@@ -42,7 +42,7 @@ import math
 
 savefilename_period = 'Sim_output_period.csv'       # name of save file, location defined by "scenario"
 savefilename_all = 'Sim_output_all.csv'             # name of save file, location defined by "scenario"
-scenario = '01_hist_data//hist_'
+scenario = '01_hist_data//vali_'#'01_hist_data//hist_'
 #scenario = '02_synth_data//synth_'
 #scenario = '03_validation_data//vali_'
 
@@ -61,7 +61,7 @@ sb_delay = 0.0              # definition of delay of SB signal in s
 # ...Simulation time settings
 t_step = 1                            # simulation time step in s
 t_now = 0                               # start of simulation in s
-t_stop = ( 60 * 60)                      # time, at which the simulation ends in s, one month
+t_stop = 60*60 - t_step                      # time, at which the simulation ends in s, one month
 k_now = 0                               # discrete time variable
 t_day = t_now                           # time of current day in s
 t_isp = 15 * 60                         # duration of an Imbalance Settlement Period in s
@@ -71,7 +71,7 @@ month_count = 0                         # number of the month of the year
 day_in_month = 0                        # day of the month
 
 # ...Vectors for the simulation time variables
-t_vector = [0]
+t_vector = []
 k_vector = []
 
 # ...Checking divisibility of time constants
@@ -160,7 +160,7 @@ CA1.array_da_prices = array_da_prices
 
 # ...Initialization of Balancing Groups
 # read balance Groups from csv and add to Control area
-array_bilanzkreise = fileexch.get_balancing_groups(scenario, smartbalancing, sim_steps, t_step)
+array_bilanzkreise = fileexch.get_balancing_groups(scenario, smartbalancing, sim_steps)
 
 for i in range(len(array_bilanzkreise)):
     CA1.array_balancinggroups.append(array_bilanzkreise[i])
@@ -316,7 +316,7 @@ SZ.fcr_init(t_step=t_step)
 SZ.afrr_init(t_step=t_step)
 
 #save initial values
-SZ.write_results()
+#SZ.write_results()
 
 t_vector.append(t_now)
 k_vector.append(k_now)
@@ -430,15 +430,16 @@ if save_data:
                  #'Chlorine AEP costs [EUR]': CA1.array_balancinggroups[21].array_AEP_costs_period,
                  #'Gas AEP costs [EUR]': CA1.array_balancinggroups[3].array_AEP_costs_period
                 }
-    fileexch.save_period_data(scenario=scenario,
-                              save_file_name=savefilename_period,
-                              save_dict=save_dict,
-                              t_step=t_step,
-                              t_isp=t_isp,
-                              t_stop=t_stop)
-    print('Simulation results for every ISP were saved in file', savefilename_period)
+    # fileexch.save_period_data(scenario=scenario,
+    #                           save_file_name=savefilename_period,
+    #                           save_dict=save_dict,
+    #                           t_step=t_step,
+    #                           t_isp=t_isp,
+    #                           t_stop=t_stop)
+    # print('Simulation results for every ISP were saved in file', savefilename_period)
 
     save_dict = {'time [s]': t_vector,
+                 'steps': k_vector,
                  'f [Hz]': SZ.array_f,
                  'FRCE [MW]': CA1.array_FRCE,
                  'aFRR FRCE (open loop) [MW]': CA1.array_FRCE_ol,
@@ -446,20 +447,22 @@ if save_data:
                  'aFRR P [MW]': CA1.array_aFRR_P,
                  'mFRR P [MW]': CA1.array_mFRR_P,
                  'SB P [MW]': CA1.array_sb_P,
+                 'P gen [MW]' : CA1.array_balancinggroups[1].array_gen_P,
+                 'P gen schedule [MW]' : CA1.array_balancinggroups[1].array_gen_P_schedule,
                  'insufficient pos. aFRR': CA1.array_aFRR_pos_insuf,
                  'insufficient neg. aFRR': CA1.array_aFRR_neg_insuf,
                  'insufficient pos. mFRR': CA1.array_mFRR_pos_insuf,
                  'insufficient neg. mFRR': CA1.array_mFRR_neg_insuf,
                  'AEP [EUR/MWh]': CA1.array_AEP,
-                 'Solar Power [MW]': CA1.array_balancinggroups[14].array_sb_P,
-                 'Wind offshore Power [MW]': CA1.array_balancinggroups[15].array_sb_P,
-                 'Wind onshore Power [MW]': CA1.array_balancinggroups[16].array_sb_P,
-                 'Aluminium Power [MW]': CA1.array_balancinggroups[17].array_sb_P,
-                 'Steel Power [MW]': CA1.array_balancinggroups[18].array_sb_P,
-                 'Cement Power [MW]': CA1.array_balancinggroups[19].array_sb_P,
-                 'Paper Power [MW]': CA1.array_balancinggroups[20].array_sb_P,
-                 'Chlorine Power [MW]': CA1.array_balancinggroups[21].array_sb_P,
-                 'Gas Power [MW]': CA1.array_balancinggroups[3].array_sb_P
+            #    'Solar Power [MW]': CA1.array_balancinggroups[14].array_sb_P,
+            #    'Wind offshore Power [MW]': CA1.array_balancinggroups[15].array_sb_P,
+            #    'Wind onshore Power [MW]': CA1.array_balancinggroups[16].array_sb_P,
+            #    'Aluminium Power [MW]': CA1.array_balancinggroups[17].array_sb_P,
+            #    'Steel Power [MW]': CA1.array_balancinggroups[18].array_sb_P,
+            #    'Cement Power [MW]': CA1.array_balancinggroups[19].array_sb_P,
+            #    'Paper Power [MW]': CA1.array_balancinggroups[20].array_sb_P,
+            #    'Chlorine Power [MW]': CA1.array_balancinggroups[21].array_sb_P,
+            #    'Gas Power [MW]': CA1.array_balancinggroups[3].array_sb_P
                 }
     
     fileexch.save_t_step_data(scenario=scenario,
@@ -489,13 +492,13 @@ if save_data:
     plt.ylabel('Power / MW')
     plt.legend(['Generated power', 'Scheduled power'])
 
-
+    array_delta_P = [a-b for a, b in zip(CA1.array_gen_P, CA1.array_gen_P_schedule)]
     plt.figure(3)
-    plt.plot(#t_vector, #CA1.array_FRCE,
+    plt.plot(t_vector, CA1.array_FRCE,
                 t_vector, CA1.array_FCR_P,
                 t_vector, CA1.array_aFRR_P,
-                t_vector, CA1.array_sb_P
-                )
+                t_vector, CA1.array_sb_P,
+                t_vector, array_delta_P)
                 #t_vector, CA1.array_FRCE_cl_pos,
                 #t_vector, CA1.array_FRCE_cl_neg,
                 #t_vector, CA1.array_aFRR_P_pos,
@@ -510,7 +513,7 @@ if save_data:
     plt.xlabel('time / s')
     plt.ylabel('Power / MW')
     #plt.legend(['FRCE', 'aFRR_P_pos', 'aFRR_P_neg', 'mFRR_P_pos', 'mFRR_P_neg'])
-    plt.legend(['P_FCR', 'P_aFRR', 'SB_P'])
+    plt.legend(['FRCE','P_FCR', 'P_aFRR', 'SB_P', 'delta_P'])
    
     plt.show()
 else:
