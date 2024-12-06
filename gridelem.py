@@ -133,7 +133,7 @@ class GridElement:
     # The method sums up the imbalance of all subordinated grid elements
     def imba_calc(self):
         for i in self.array_subordinates:
-            i.imba_calc()
+            i.imba_calc(f_delta=self.f_delta)
         self.imba_P_ph = self.gen_P - self.load_P + self.aFRR_P + self.mFRR_P + self.sb_P
         self.imba_P_sc = self.gen_P - self.gen_P_schedule - self.load_P + self.load_P_schedule + self.sb_P
 
@@ -333,11 +333,11 @@ class CalculatingGridElement(GridElement):
     # The imbalance is defined as a deviation from the schedule.
     # The method further calculates the open loop FRCE signal.
     # no sb_P in calculating grid element
-    def imba_calc(self):
+    def imba_calc(self, f_delta):
         self.imba_P_ph = self.gen_P - self.load_P + self.aFRR_P + self.sb_P
         self.imba_P_sc = self.gen_P - self.gen_P_schedule - self.load_P + self.load_P_schedule + self.aFRR_P + self.mFRR_P
         self.FRCE = - self.imba_P_sc # nur in sb_signal(self) wird FRCE verwendet
-        self.FRCE_ol = self.gen_P_schedule - self.gen_P + self.load_P - self.load_P_schedule
+        self.FRCE_ol = self.gen_P_schedule - self.gen_P + self.load_P - self.load_P_schedule #+ self.aFRR_P + self.mFRR_P
         if self.FRCE_ol > 0:
             self.FRCE_ol_pos = self.FRCE_ol
             self.FRCE_ol_neg = 0.0
@@ -356,7 +356,7 @@ class CalculatingGridElement(GridElement):
     # Method calculating the activated FCR power
     # as function of a frequency deviation and 'FCR_lambda'.
     def fcr_calc(self, f_delta):
-        self.FCR_P = -(self.FCR_lambda * f_delta)
+        self.FCR_P = self.FCR_lambda * f_delta
 
     # Method initializing an array acting as the time delay for the activation of aFRR
     # The array has one element for each time step, that the signal is delayed.
@@ -376,8 +376,8 @@ class CalculatingGridElement(GridElement):
         self.FRCE_cl_pos_before = self.FRCE_cl_pos
         self.FRCE_cl_neg_before = self.FRCE_cl_neg
 
-        self.FRCE_cl_pos = self.FRCE_ol_pos - self.aFRR_P_pos
-        self.FRCE_cl_neg = self.FRCE_ol_neg - self.aFRR_P_neg
+        self.FRCE_cl_pos = self.FRCE_ol_pos #- self.aFRR_P_pos
+        self.FRCE_cl_neg = self.FRCE_ol_neg #- self.aFRR_P_neg
     
     #Diskretisierung des PI-Reglers unter Verwendung der Trapezregel, skalierierung mit 1/t_step unnötig
         self.aFRR_ref_pos = self.aFRR_ref_pos + (
@@ -480,6 +480,7 @@ class SynchronousZone(GridElement):
         self.delta_P = 0.0
 
         self.array_f = []
+        self.array_f_delta = []
         self.array_delta_P = []
         
         # Other parameters and variables are inherited from the super class 'GridElement'.
@@ -492,8 +493,8 @@ class SynchronousZone(GridElement):
     # and the FCR constant 'FCR_lambda'.
     def f_calc(self, t_step):
         self.delta_P_before = self.delta_P
-        self.delta_P =  +self.imba_P_sc - self.FCR_P - self.aFRR_P - self.mFRR_P
-        self.f = self.f + 50/(300000*12) * (t_step/2) * (self.delta_P_before + self.delta_P) 
+        self.delta_P = self.gen_P - self.load_P + self.FCR_P + self.aFRR_P #- self.mFRR_P FCr, aFRR positiv, weil zugeführte Leistung positiv
+        self.f = self.f + (self.f_nom / (300000 * 12)) * (t_step / 2) * (self.delta_P + self.delta_P_before)
         self.f_delta = self.f_nom - self.f
 
     # Method calculating the activated FCR power of the system.
@@ -542,6 +543,7 @@ class SynchronousZone(GridElement):
         for i in self.array_subordinates:
             i.write_results()
         self.array_f.append(self.f)
+        self.array_f_delta.append(self.f_delta)
         self.array_delta_P.append(self.delta_P)
         self.array_gen_P.append(self.gen_P)
         self.array_load_P.append(self.load_P)
@@ -817,13 +819,13 @@ class ControlArea(CalculatingGridElement):
 
     # Method calculating the imbalance of the Control Area.
     # The method sums up the imbalance of all subordinated Balancing Groups
-    def imba_calc(self):
+    def imba_calc(self, f_delta):
         for i in self.array_balancinggroups:
             i.imba_calc() #speichert Ungleichgewichte imba_P_ph und imba_P_sc der jeweiligen Balancing Group ab
-        self.imba_P_ph = self.gen_P - self.load_P + self.aFRR_P + self.mFRR_P + self.sb_P #imba_P_ph: imbalance in physical power
+        self.imba_P_ph = self.gen_P - self.load_P + self.aFRR_P + self.mFRR_P + self.sb_P + self.FCR_P #imba_P_ph: imbalance in physical power
         self.imba_P_sc = self.gen_P - self.gen_P_schedule - self.load_P + self.load_P_schedule + self.sb_P #imba_P_sc: imbalance in scheduled power
         self.FRCE = -self.imba_P_sc 
-        self.FRCE_ol = -self.imba_P_sc + self.mFRR_P + self.FCR_P #- self.FCR_P #Vorzeichen muss geändert werden, FRCE_ol: open loop FRCE signal
+        self.FRCE_ol = self.aFRR_Kr*f_delta #-self.imba_P_sc + self.mFRR_P + self.FCR_P, FRCE_ol: open loop FRCE signal
 
         if self.FRCE_ol > 0:
             self.FRCE_ol_pos = self.FRCE_ol
@@ -870,7 +872,7 @@ class ControlArea(CalculatingGridElement):
     # Method calculating the activated FCR power
     # as function of a frequency deviation and 'FCR_lambda'.
     def fcr_calc(self, f_delta):
-        self.FCR_P =  (self.FCR_lambda * f_delta) 
+        self.FCR_P = self.FCR_lambda * f_delta
     
     # Method calculating the activated aFRR power of the system.
     # Added call of method afrr_price_calc for this class.
@@ -879,8 +881,8 @@ class ControlArea(CalculatingGridElement):
         self.FRCE_cl_pos_before = self.FRCE_cl_pos
         self.FRCE_cl_neg_before = self.FRCE_cl_neg
         #ACE = FRCE_ol
-        self.FRCE_cl_pos = self.FRCE_ol_pos - self.aFRR_P_pos
-        self.FRCE_cl_neg = self.FRCE_ol_neg - self.aFRR_P_neg
+        self.FRCE_cl_pos = self.FRCE_ol_pos #- self.aFRR_P_pos
+        self.FRCE_cl_neg = self.FRCE_ol_neg #- self.aFRR_P_neg
         #PI-Regler für aFRR
         self.aFRR_ref_pos = self.aFRR_ref_pos + (
             (self.aFRR_beta/t_step + t_step / (2 * self.aFRR_T)) * self.FRCE_cl_pos + 
