@@ -47,8 +47,8 @@ scenario = '01_hist_data//hist_'
 #scenario = '03_validation_data//vali_'
 
 # ...Activation of simulation functions
-smartbalancing = True       # True: Smart Balancing is globally switched on
-fuzzy = True                # True: Smart Balancing is globally activated via Fuzzy Logic
+smartbalancing = False       # True: Smart Balancing is globally switched on
+fuzzy = False                # True: Smart Balancing is globally activated via Fuzzy Logic
 FRR_pricing = 0             # Global variable to switch both aFRR & mFRR from pay-as-bid (0) to marginal pricing (1)
 BEPP = 900                  # Balancing Energy Pricing Period (BEPP) in s - only applied for marginal pricing
                             # e.g. 900 (State of the art) or 60 or 4 (=> t_step!)
@@ -61,7 +61,7 @@ sb_delay = 0.0              # definition of delay of SB signal in s
 # ...Simulation time settings
 t_step = 1                             # simulation time step in s
 t_now = 0                            # start of simulation in s
-t_stop = ( 60 * 60)   # time, at which the simulation ends in s, one month
+t_stop = ( 30 * 60) - t_step  # time, at which the simulation ends in s, one month
 k_now = 0                             # discrete time variable, k
 t_day = 0                               # time of current day in s
 t_isp = 15 * 60                         # duration of an Imbalance Settlement Period in s
@@ -489,12 +489,15 @@ if save_data:
 
     plt.figure(3)
     plt.plot(t_vector, CA1.array_FRCE,
-                t_vector, CA1.array_FRCE_cl_pos,
-                t_vector, CA1.array_FRCE_cl_neg,
-                t_vector, CA1.array_aFRR_P_pos,
-                t_vector, CA1.array_aFRR_P_neg,
-                t_vector, CA1.array_mFRR_P_pos,
-                t_vector, CA1.array_mFRR_P_neg)
+             t_vector, CA1.array_FCR_P,
+             t_vector, CA1.array_aFRR_P,
+             t_vector, CA1.array_sb_P)
+                #t_vector, CA1.array_FRCE_cl_pos,
+                #t_vector, CA1.array_FRCE_cl_neg,
+                #t_vector, CA1.array_aFRR_P_pos,
+                #t_vector, CA1.array_aFRR_P_neg,
+                #t_vector, CA1.array_mFRR_P_pos,
+                #t_vector, CA1.array_mFRR_P_neg)
     plt.title(CA1.name)
     grapfunc.add_vert_lines(plt=plt, period=t_isp, t_stop=t_stop, color='gray', linestyle='dotted', linewidth=0.5)
     grapfunc.add_vert_lines(plt=plt, period=t_mol, t_stop=t_stop, color='black', linestyle='dashed', linewidth=0.5)
@@ -502,7 +505,7 @@ if save_data:
     plt.grid()
     plt.xlabel('time / s')
     plt.ylabel('Power / MW')
-    plt.legend(['FRCE', 'aFRR_P_pos', 'aFRR_P_neg', 'mFRR_P_pos', 'mFRR_P_neg']) 
+    plt.legend(['FRCE', 'FCR_P', 'aFRR_P', 'SB_P']) #'FRCE_cl_pos', 'FRCE_cl_neg', 'aFRR_P_pos', 'aFRR_P_neg', 'mFRR_P_pos', 'mFRR_P_neg'])
     plt.show()
     
 
