@@ -42,7 +42,7 @@ import math
 
 savefilename_period = 'Sim_output_period_sprung.csv'       # name of save file, location defined by "scenario"
 savefilename_all = 'Sim_output_all_sprung.csv'             # name of save file, location defined by "scenario"
-scenario = '01_hist_data//vali_'#'01_hist_data//hist_'
+scenario = '01_hist_data//hist_' #'01_hist_data//vali_'
 #scenario = '02_synth_data//synth_'
 #scenario = '03_validation_data//vali_'
 
@@ -61,7 +61,7 @@ sb_delay = 0.0              # definition of delay of SB signal in s
 # ...Simulation time settings
 t_step = 1                              # simulation time step in s
 t_now = 0                               # start of simulation in s
-t_stop =  2 * 60 * 60 - t_step          # time, at which the simulation ends in s, one month
+t_stop =  30 * 60 - t_step          # time, at which the simulation ends in s, one month
 k_now = 0                               # discrete time variable
 t_day = t_now                           # time of current day in s
 t_isp = 15 * 60                         # duration of an Imbalance Settlement Period in s
@@ -142,7 +142,7 @@ SZ.array_subordinates.append(CA0)
 CA1 = gridelem.ControlArea(name='Deutschland',
                            FCR_lambda=1500.0,
                            aFRR_Kr=1550.0,
-                           aFRR_T=250.0, #250.0,
+                           aFRR_T=250.0,
                            aFRR_beta=0.1,
                            aFRR_delay=30.0,
                            aFRR_pricing=FRR_pricing,
@@ -482,29 +482,35 @@ if save_data:
     plt.xlabel('time / s')
     plt.ylabel('Frequency / Hz')
     
-
-    # plt.figure(2)
-    # plt.plot(t_vector, CA1.array_gen_P,
-    #          t_vector, CA1.array_gen_P_schedule)
-    # plt.title('Scheduled and generated power')
-    # plt.grid()
-    # plt.xlabel('time / s')
-    # plt.ylabel('Power / MW')
-    # plt.legend(['Generated power', 'Scheduled power'])
-
+    
     array_delta_P = [a-b for a, b in zip(CA1.array_gen_P, CA1.array_gen_P_schedule)]
+    array_delta_P_load_gen = [a-b for a, b in zip(CA1.array_gen_P, CA1.array_load_P)]
+
+    plt.figure(2)
+    plt.plot(t_vector, CA1.array_gen_P,
+             t_vector, CA1.array_gen_P_schedule,
+             t_vector, CA1.array_load_P,
+             #t_vector, CA1.array_load_P_schedule,             
+             t_vector, array_delta_P_load_gen,
+             t_vector, array_delta_P)
+             #t_vector, CA1.array_imba_P_ph,
+             #t_vector, CA1.array_imba_P_sc)
+    plt.title('Scheduled and generated power')
+    plt.grid()
+    plt.xlabel('time / s')
+    plt.ylabel('Power / MW')
+    plt.legend(['P_gen','P_gen_sc','P_load', 'delta_P_ph (gen-load)', 'delta_P_schedule (gen-gen_sc)']) 
+
     plt.figure(3)
     plt.plot(t_vector, CA1.array_FRCE,
-             t_vector, SZ.array_f,
                 t_vector, CA1.array_FCR_P,
                 t_vector, CA1.array_aFRR_P,
-                t_vector, CA1.array_sb_P,
-                #t_vector, array_delta_P,
-                t_vector, SZ.array_delta_P)
-                #t_vector, CA1.array_FRCE_cl_pos,
-                #t_vector, CA1.array_FRCE_cl_neg,
-                #t_vector, CA1.array_aFRR_P_pos,
-                #t_vector, CA1.array_aFRR_P_neg,
+                t_vector, CA1.array_sb_P)
+                #t_vector, SZ.array_delta_P)
+                # t_vector, CA1.array_FRCE_cl_pos,
+                # t_vector, CA1.array_FRCE_cl_neg,
+                # t_vector, CA1.array_aFRR_P_pos,
+                # t_vector, CA1.array_aFRR_P_neg)
                 #t_vector, CA1.array_mFRR_P_pos,
                 #t_vector, CA1.array_mFRR_P_neg)
     plt.title(CA1.name)
@@ -515,7 +521,7 @@ if save_data:
     plt.xlabel('time / s')
     plt.ylabel('Power / MW')
     #plt.legend(['FRCE', 'aFRR_P_pos', 'aFRR_P_neg', 'mFRR_P_pos', 'mFRR_P_neg'])
-    plt.legend(['FRCE','f','P_FCR', 'P_aFRR', 'SB_P', 'delta_P_for_f_calc'])
+    plt.legend(['Imba_FRCE','P_FCR', 'P_aFRR', 'SB_P'])
    
     plt.show()
 else:

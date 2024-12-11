@@ -134,7 +134,7 @@ class GridElement:
     def imba_calc(self):
         for i in self.array_subordinates:
             i.imba_calc(f_delta=self.f_delta)
-        self.imba_P_ph = self.gen_P - self.load_P + self.aFRR_P + self.mFRR_P + self.sb_P
+        self.imba_P_ph = self.gen_P - self.load_P + self.FCR_P + self.aFRR_P + self.mFRR_P + self.sb_P
         self.imba_P_sc = self.gen_P - self.gen_P_schedule - self.load_P + self.load_P_schedule + self.sb_P
 
     # Method calculating the FCR parameter 'FCR_lambda' of the grid element.
@@ -334,8 +334,8 @@ class CalculatingGridElement(GridElement):
     # The method further calculates the open loop FRCE signal.
     # no sb_P in calculating grid element
     def imba_calc(self, f_delta):
-        self.imba_P_ph = self.gen_P - self.load_P + self.aFRR_P + self.sb_P
-        self.imba_P_sc = self.gen_P - self.gen_P_schedule - self.load_P + self.load_P_schedule + self.aFRR_P + self.mFRR_P
+        self.imba_P_ph = self.gen_P - self.load_P + self.aFRR_P + self.FCR_P + self.sb_P
+        self.imba_P_sc = self.gen_P - self.gen_P_schedule - self.load_P + self.load_P_schedule + self.FCR_P + self.aFRR_P + self.mFRR_P
         self.FRCE = - self.imba_P_sc # nur in sb_signal(self) wird FRCE verwendet
         self.FRCE_ol = self.gen_P_schedule - self.gen_P + self.load_P - self.load_P_schedule #+ self.aFRR_P + self.mFRR_P
         if self.FRCE_ol > 0:
@@ -493,7 +493,7 @@ class SynchronousZone(GridElement):
     # and the FCR constant 'FCR_lambda'.
     def f_calc(self, t_step):
         self.delta_P_before = self.delta_P
-        self.delta_P = self.gen_P - self.load_P + self.FCR_P + self.aFRR_P #- self.mFRR_P FCr, aFRR positiv, weil zugeführte Leistung positiv
+        self.delta_P = self.gen_P - self.load_P + self.FCR_P + self.aFRR_P + self.sb_P # + self.mFRR_P; entspricht imba_P_ph  FCR, aFRR positiv, weil zugeführte Leistung positiv
         self.f = self.f + (self.f_nom / (300000 * 12)) * (t_step / 2) * (self.delta_P + self.delta_P_before)
         self.f_delta = self.f_nom - self.f
 
@@ -822,10 +822,10 @@ class ControlArea(CalculatingGridElement):
     def imba_calc(self, f_delta):
         for i in self.array_balancinggroups:
             i.imba_calc() #speichert Ungleichgewichte imba_P_ph und imba_P_sc der jeweiligen Balancing Group ab
-        self.imba_P_ph = self.gen_P - self.load_P + self.aFRR_P + self.mFRR_P + self.sb_P + self.FCR_P #imba_P_ph: imbalance in physical power
+        self.imba_P_ph = self.gen_P - self.load_P + self.aFRR_P + self.mFRR_P + self.FCR_P+ self.sb_P  #imba_P_ph: imbalance in physical power
         self.imba_P_sc = self.gen_P - self.gen_P_schedule - self.load_P + self.load_P_schedule + self.sb_P #imba_P_sc: imbalance in scheduled power
         self.FRCE = -self.imba_P_sc 
-        self.FRCE_ol = self.aFRR_Kr*f_delta #-self.imba_P_sc + self.mFRR_P + self.FCR_P, FRCE_ol: open loop FRCE signal
+        self.FRCE_ol = self.aFRR_Kr*f_delta - self.imba_P_ph #-self.imba_P_sc + self.mFRR_P + self.FCR_P, FRCE_ol: open loop FRCE signal
 
         if self.FRCE_ol > 0:
             self.FRCE_ol_pos = self.FRCE_ol
@@ -939,7 +939,7 @@ class ControlArea(CalculatingGridElement):
                         t_step=t_step,
                         t_isp=t_isp,
                         AEP=self.AEP) #AEP wurde in vorherigem Schritt berechnet
-            #aFRR_calc ist definiert in class BalancingGroup, berechnet erzeugte, verbrauchte und geplante Energie pro BK per ISP
+            #aFRR_calc ist definiert in class BalancingGroup, berechnet erzeugte, verbrauchte und geplante Energie pro BK per ISP, summiert alle Energien während ISP auf
             i.sb_calc(FRCE_sb=self.FRCE_sb,
                       old_FRCE_sb = self.old_FRCE_sb,
                       d_Imba = self.delta_FRCE_sb,
