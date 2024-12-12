@@ -1648,6 +1648,7 @@ class ControlArea(CalculatingGridElement):
     
     def aep_calc(self, t_now, t_step, t_isp, da_price, FRCE):
         # Calculation of AEP1
+        FRR_energy = self.aFRR_E_pos_period + self.aFRR_E_neg_period + self.mFRR_E_pos_period + self.mFRR_E_neg_period
         if self.aFRR_E_pos == 0 and self.aFRR_E_neg == 0 and self.mFRR_E_pos == 0 and self.mFRR_E_neg == 0:
             self.AEP = 0.0
         elif self.aFRR_E_pos + self.aFRR_E_neg + self.mFRR_E_pos + self.mFRR_E_neg == 0:

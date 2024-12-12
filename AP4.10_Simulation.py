@@ -61,7 +61,7 @@ sb_delay = 0.0              # definition of delay of SB signal in s
 # ...Simulation time settings
 t_step = 1                             # simulation time step in s
 t_now = 0                            # start of simulation in s
-t_stop = ( 30 * 60) - t_step  # time, at which the simulation ends in s, one month
+t_stop = ( 60 * 60) - t_step  # time, at which the simulation ends in s, one month
 k_now = 0                             # discrete time variable, k
 t_day = 0                               # time of current day in s
 t_isp = 15 * 60                         # duration of an Imbalance Settlement Period in s
@@ -368,8 +368,9 @@ while t_now < t_stop:
     t_now += t_step
     t_day += t_step
     t_vector.append(t_now)
-    k_now += 1
-    k_vector.append(k_now)
+    if (t_now) % 60 == 0:
+        k_now += 1
+        k_vector.append(k_now)
 
     #todo inserte explanaition of simulaiton order
 
@@ -412,19 +413,19 @@ if save_data:
                  'GER neg. energy mFRR [MWh]': CA1.array_mFRR_E_neg_period,
                  'GER pos. mFRR costs [EUR]': CA1.array_mFRR_costs_pos_period,
                  'GER neg. mFRR costs [EUR]': CA1.array_mFRR_costs_neg_period,
-                 'GER AEP [EUR/MWh]': CA1.array_AEP,
-                 'Solar AEP costs [EUR]': CA1.array_balancinggroups[14].array_AEP_costs_period,
-                 'Solar Marktprämie [EUR]': CA1.array_balancinggroups[14].array_gen_income_period,
-                 'Wind offshore AEP costs [EUR]': CA1.array_balancinggroups[15].array_AEP_costs_period,
-                 'Wind offshore Marktprämie [EUR]': CA1.array_balancinggroups[15].array_gen_income_period,
-                 'Wind onshore AEP costs [EUR]': CA1.array_balancinggroups[16].array_AEP_costs_period,
-                 'Wind onshore Marktprämie [EUR]': CA1.array_balancinggroups[16].array_gen_income_period,
-                 'Aluminium AEP costs [EUR]': CA1.array_balancinggroups[17].array_AEP_costs_period,
-                 'Steel AEP costs [EUR]': CA1.array_balancinggroups[18].array_AEP_costs_period,
-                 'Cement AEP costs [EUR]': CA1.array_balancinggroups[19].array_AEP_costs_period,
-                 'Paper AEP costs [EUR]': CA1.array_balancinggroups[20].array_AEP_costs_period,
-                 'Chlorine AEP costs [EUR]': CA1.array_balancinggroups[21].array_AEP_costs_period,
-                 'Gas AEP costs [EUR]': CA1.array_balancinggroups[3].array_AEP_costs_period
+                 'GER AEP [EUR/MWh]': CA1.array_AEP
+                #  'Solar AEP costs [EUR]': CA1.array_balancinggroups[14].array_AEP_costs_period,
+                #  'Solar Marktprämie [EUR]': CA1.array_balancinggroups[14].array_gen_income_period,
+                #  'Wind offshore AEP costs [EUR]': CA1.array_balancinggroups[15].array_AEP_costs_period,
+                #  'Wind offshore Marktprämie [EUR]': CA1.array_balancinggroups[15].array_gen_income_period,
+                #  'Wind onshore AEP costs [EUR]': CA1.array_balancinggroups[16].array_AEP_costs_period,
+                #  'Wind onshore Marktprämie [EUR]': CA1.array_balancinggroups[16].array_gen_income_period,
+                #  'Aluminium AEP costs [EUR]': CA1.array_balancinggroups[17].array_AEP_costs_period,
+                #  'Steel AEP costs [EUR]': CA1.array_balancinggroups[18].array_AEP_costs_period,
+                #  'Cement AEP costs [EUR]': CA1.array_balancinggroups[19].array_AEP_costs_period,
+                #  'Paper AEP costs [EUR]': CA1.array_balancinggroups[20].array_AEP_costs_period,
+                #  'Chlorine AEP costs [EUR]': CA1.array_balancinggroups[21].array_AEP_costs_period,
+                #  'Gas AEP costs [EUR]': CA1.array_balancinggroups[3].array_AEP_costs_period
                 }
 
     fileexch.save_period_data(scenario=scenario,
@@ -447,16 +448,16 @@ if save_data:
                  'insufficient neg. aFRR': CA1.array_aFRR_neg_insuf,
                  'insufficient pos. mFRR': CA1.array_mFRR_pos_insuf,
                  'insufficient neg. mFRR': CA1.array_mFRR_neg_insuf,
-                 'AEP [EUR/MWh]': CA1.array_AEP,
-                 'bereitgestelltes Smart Balancing als Solar Power [MW]': CA1.array_balancinggroups[14].array_sb_P,
-                 'bereitgestelltes Smart Balancing als Wind offshore Power [MW]': CA1.array_balancinggroups[15].array_sb_P,
-                 'bereitgestelltes Smart Balancing als Wind onshore Power [MW]': CA1.array_balancinggroups[16].array_sb_P,
-                 'bereitgestelltes Smart Balancing als Aluminium Power [MW]': CA1.array_balancinggroups[17].array_sb_P,
-                 'bereitgestelltes Smart Balancing als Steel Power [MW]': CA1.array_balancinggroups[18].array_sb_P,
-                 'bereitgestelltes Smart Balancing als Cement Power [MW]': CA1.array_balancinggroups[19].array_sb_P,
-                 'bereitgestelltes Smart Balancing als Paper Power [MW]': CA1.array_balancinggroups[20].array_sb_P,
-                 'bereitgestelltes Smart Balancing als Chlorine Power [MW]': CA1.array_balancinggroups[21].array_sb_P,
-                 'bereitgestelltes Smart Balancing als Gas Power [MW]': CA1.array_balancinggroups[3].array_sb_P
+                 'AEP [EUR/MWh]': CA1.array_AEP#,
+                #  'bereitgestelltes Smart Balancing als Solar Power [MW]': CA1.array_balancinggroups[14].array_sb_P,
+                #  'bereitgestelltes Smart Balancing als Wind offshore Power [MW]': CA1.array_balancinggroups[15].array_sb_P,
+                #  'bereitgestelltes Smart Balancing als Wind onshore Power [MW]': CA1.array_balancinggroups[16].array_sb_P,
+                #  'bereitgestelltes Smart Balancing als Aluminium Power [MW]': CA1.array_balancinggroups[17].array_sb_P,
+                #  'bereitgestelltes Smart Balancing als Steel Power [MW]': CA1.array_balancinggroups[18].array_sb_P,
+                #  'bereitgestelltes Smart Balancing als Cement Power [MW]': CA1.array_balancinggroups[19].array_sb_P,
+                #  'bereitgestelltes Smart Balancing als Paper Power [MW]': CA1.array_balancinggroups[20].array_sb_P,
+                #  'bereitgestelltes Smart Balancing als Chlorine Power [MW]': CA1.array_balancinggroups[21].array_sb_P,
+                #  'bereitgestelltes Smart Balancing als Gas Power [MW]': CA1.array_balancinggroups[3].array_sb_P
                 }
 
     fileexch.save_t_step_data(scenario=scenario,
